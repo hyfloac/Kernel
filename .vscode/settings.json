@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "kstdint.h": "c",
+        "checkmem.h": "c",
+        "callspec.h": "c",
+        "memset.h": "c",
+        "page_map.h": "c",
+        "bitset.h": "c",
+        "interrupt.h": "c",
+        "console.h": "c",
+        "kprintf.h": "c",
+        "itoa.h": "c",
+        "kstring.h": "c",
+        "io.h": "c"
+    }
+}
