@@ -16,6 +16,10 @@ typedef i32 KError_t;
 #define KE_FAIL (-1)
 #define KE_INVALID_ARG (-2)
 
+#define KE_PAGING_NO_VALID_PAGES (-64)
+#define KE_PAGING_NO_32_BIT_PAGES (-65)
+#define KE_PAGING_NO_MORE_PLL (-66)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

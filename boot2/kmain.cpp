@@ -7,6 +7,8 @@
 #include "page_map.h"
 #include "kprintf.h"
 #include "serial.h"
+#include "kerror.h"
+#include "paging.h"
 
 char serialReadBuffer[1024];
 char serialWriteBuffer[1024];
@@ -54,6 +56,10 @@ extern "C" void kmain()
     CheckMemoryLayout();
     DumpMemoryLayout();
 
-    const int pageInitRes = InitPageMap();
-    kprintf("Page Init Res: %d\n", pageInitRes);
+    const KError_t pageInitRes = InitPageMap();
+    kprintf("Page Init Res: %s\n", KernelLocalizeErrorCode(pageInitRes));
+
+    SetupPaging32();
+
+    kprintf("Print after enable paging!\n");
 }

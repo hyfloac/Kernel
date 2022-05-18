@@ -1,6 +1,8 @@
 #include "paging.h"
 
 #include "kstdint.h"
+#include "page_map.h"
+#include "kprintf.h"
 
 typedef struct
 {
@@ -56,7 +58,7 @@ static PAEPageTableEntry CreatePAEPageTableEntry(
     const u32 readWrite, 
     const u32 userSupervisor,
     const u32 pageLevelWriteThrough, 
-    const u32 PageLevelCacheDisable,
+    const u32 pageLevelCacheDisable,
     const u32 physicalAddressLow,
     const u32 physicalAddressHigh
 )
@@ -66,7 +68,7 @@ static PAEPageTableEntry CreatePAEPageTableEntry(
     entry.ReadWrite = readWrite ? 1 : 0;
     entry.UserSupervsior = userSupervisor ? 1 : 0;
     entry.PageLevelWriteThrough = pageLevelWriteThrough ? 1 : 0;
-    entry.PageLevelCacheDisable = PageLevelCacheDisable ? 1 : 0;
+    entry.PageLevelCacheDisable = pageLevelCacheDisable ? 1 : 0;
     entry.Accessed = 0;
     entry.Dirty = 0;
     entry.PAT = 0;
@@ -140,6 +142,10 @@ static void InitKernelPageEntries();
 
 void SetupPaging32()
 {
+    u32 pageCount = 4;
+    u64 physicalPages = GetPhysPages(&pageCount);
+    page_directory_storage = (void*) (u32) physicalPages;
+
     (void) CreatePAEPageDirectoryEntry(0, 0, 0, 0, 0, 0, 0);
     (void) CreatePAEPageTableEntry(0, 0, 0, 0, 0, 0, 0);
 
@@ -147,6 +153,18 @@ void SetupPaging32()
     InitPDPT();
     InitPagingEntries();
     InitKernelPageEntries();
+
+
+    PAEPageDirectoryEntry* pd = (PAEPageDirectoryEntry*) (PageDirectoryPointerTable[0].PhysicalAddressLow << 12);
+    PAEPageTableEntry* pt = (PAEPageTableEntry*) (pd[0].PhysicalAddressLow << 12);
+
+    u64 pageAddress = ((((u64) pt[1].PhysicalAddressHigh) << 32) | pt[1].PhysicalAddressLow) << 12;
+
+    kprintf("0x%p%p\n", (u32) (pageAddress >> 32), (u32) pageAddress);
+
+    u64 pdpt0Address = ((((u64) PageDirectoryPointerTable[0].PhysicalAddressHigh) << 32) | PageDirectoryPointerTable[0].PhysicalAddressLow) << 12;
+
+    kprintf("0x%p%p\n", (u32) (pdpt0Address >> 32), (u32) pdpt0Address);
 
     enable_pae32();
     set_cr3_page_pointer32(PageDirectoryPointerTable);
@@ -189,22 +207,30 @@ PAEPointer GetPhysAddress(const void* const virtualAddress)
     return ret;
 }
 
-void MapPage(void* const physicalAddress, void* const virtualAddress, const u32 flags)
+void MapPage(void* const physicalAddress, void* const virtualAddress, const u32 readWrite, const u32 userSupervisor, const u32 pageLevelWriteThrough, const u32 pageLevelCacheDisable)
 {
     // Make sure that both addresses are page-aligned.
-    const u32 pdindex = (u32) virtualAddress >> 22;
-    const u32 ptindex = (u32) virtualAddress >> 12 & 0x03FF;
+    const u32 pdptIndex = (u32) virtualAddress >> 30;
+    const u32 pdIndex = (u32) virtualAddress >> 22 & 0x02FF;
+    const u32 ptIndex = (u32) virtualAddress >> 12 & 0x02FF;
  
     // u32* const pd = (u32*) 0xFFFFF000;
     // Here you need to check whether the PD entry is present.
     // When it is not present, you need to create a new empty PT and
     // adjust the PDE accordingly.
  
-    u32* pt = ((u32*) 0xFFC00000) + (0x400 * pdindex);
+
+
+    PAEPageDirectoryEntry* pd = (PAEPageDirectoryEntry*) (PageDirectoryPointerTable[pdptIndex].PhysicalAddressLow << 12);
+
+    PAEPageTableEntry* pt = (PAEPageTableEntry*) (pd[pdIndex].PhysicalAddressLow << 12);
+
+    // PAEPageTableEntry* pt = ((PAEPageTableEntry*) 0xFFC00000) + (0x400 * pdindex);
     // Here you need to check whether the PT entry is present.
     // When it is, then there is already a mapping present. What do you do now?
  
-    pt[ptindex] = ((u32) physicalAddress) | (flags & 0xFFF) | 0x01; // Present
+    // pt[ptindex] = ((u32) physicalAddress) | (flags & 0xFFF) | 0x01; // Present
+    pt[ptIndex] = CreatePAEPageTableEntry(1, readWrite, userSupervisor, pageLevelWriteThrough, pageLevelCacheDisable, (u32) physicalAddress >> 12, 0);
  
     // Now you need to flush the entry in the TLB
     // or you might not notice the change.
@@ -227,9 +253,9 @@ static void InitPDPT()
     pdsAddress /= 4096;
 
     const u32 pdpt0Address = pdsAddress;
-    const u32 pdpt1Address = pdsAddress + 4096;
-    const u32 pdpt2Address = pdsAddress + 4096 * 2;
-    const u32 pdpt3Address = pdsAddress + 4096 * 3;
+    const u32 pdpt1Address = pdsAddress + 1;
+    const u32 pdpt2Address = pdsAddress + 2;
+    const u32 pdpt3Address = pdsAddress + 3;
 
     PageDirectoryPointerTable[0] = CreatePageDirectoryPointerTableEntry(1, 0, 0, pdpt0Address & 0x000FFFFF, pdpt0Address >> 20);
     PageDirectoryPointerTable[1] = CreatePageDirectoryPointerTableEntry(1, 0, 0, pdpt1Address & 0x000FFFFF, pdpt1Address >> 20);
@@ -239,15 +265,15 @@ static void InitPDPT()
 
 static void InitPagingEntries()
 {
-    const u32 index = PDPT_COUNT * PDE_COUNT - PDE_COUNT; // The last 4 entries
+    const u32 index = PDPT_COUNT * PDE_COUNT - 4; // The last 4 entries
 
     u32 pdsAddress = (u32) page_directory_storage;
     pdsAddress /= 4096;
 
     const u32 pdpt0Address = pdsAddress;
-    const u32 pdpt1Address = pdsAddress + 4096;
-    const u32 pdpt2Address = pdsAddress + 4096 * 2;
-    const u32 pdpt3Address = pdsAddress + 4096 * 3;
+    const u32 pdpt1Address = pdsAddress + 1;
+    const u32 pdpt2Address = pdsAddress + 2;
+    const u32 pdpt3Address = pdsAddress + 3;
 
     page_directory_storage[index + 0] = CreatePAEPageDirectoryEntry(1, 1, 0, 0, 0, pdpt0Address & 0x000FFFFF, pdpt0Address >> 20);
     page_directory_storage[index + 1] = CreatePAEPageDirectoryEntry(1, 1, 0, 0, 0, pdpt1Address & 0x000FFFFF, pdpt1Address >> 20);
@@ -257,13 +283,41 @@ static void InitPagingEntries()
 
 static void InitKernelPageEntries()
 {
-    const u32 kernelBaseAddress = 0x7C00;
-    // const u32 kernelBasePage = kernelBaseAddress / 4096;
-    const u32 kernelPageCount = 4;
+    u32 pageCount = 1;
+    PAEPageTableEntry* firstTable = (PAEPageTableEntry*) (u32) GetPhysPages(&pageCount);
 
-    for(u32 i = 0; i < kernelPageCount; ++i)
+    u32 ptAddress = (u32) firstTable;
+    ptAddress /= 4096;
+
+    for(u32 i = 0; i < PDE_COUNT - 1; ++i)
     {
-        void* address = (void*) (kernelBaseAddress * 4096 * i);
-        MapPage(address, address, 0);
+        firstTable[i] = CreatePAEPageTableEntry(1, 1, 1, 0, 0, i, 0);
     }
+
+    firstTable[PDE_COUNT - 1] = CreatePAEPageTableEntry(1, 1, 1, 0, 0, ptAddress, 0);
+    page_directory_storage[0] = CreatePAEPageDirectoryEntry(1, 1, 1, 0, 0, ptAddress, 0);
+
+    // const u32 kernelBaseAddress = 0x7C00;
+    // // const u32 kernelBasePage = kernelBaseAddress / 4096;
+    // const u32 kernelPageCount = 11;
+
+    // for(u32 i = 0; i < kernelPageCount; ++i)
+    // {
+    //     void* address = (void*) (kernelBaseAddress * 4096 * i);
+    //     MapPage(address, address, 1, 1, 0, 0);
+    // }
+
+    // void* kernelBackBufferAddress = (void*) 0x0004F000;
+    // MapPage(kernelBackBufferAddress, kernelBackBufferAddress, 1, 1, 0, 0);
+    // void* kernelFrontBufferAddress = (void*) 0x000B8000;
+    // MapPage(kernelFrontBufferAddress, kernelFrontBufferAddress, 1, 1, 0, 0);
+
+    // const u32 pllBaseAddress = 0x00050000;
+    // const u32 pllPageCount = 47;
+
+    // for(u32 i = 0; i < pllPageCount; ++i)
+    // {
+    //     void* address = (void*) (pllBaseAddress * 4096 * i);
+    //     MapPage(address, address, 1, 1, 0, 0);
+    // }
 }

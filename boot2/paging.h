@@ -27,7 +27,7 @@ extern void flush_tlb64();
 void SetupPaging32();
 
 PAEPointer GetPhysAddress(const void* virtualAddress);
-void MapPage(void* physicalAddress, void* virtualAddress, u32 flags);
+void MapPage(void* physicalAddress, void* virtualAddress, u32 readWrite, u32 userSupervisor, u32 pageLevelWriteThrough, u32 pageLevelCacheDisable);
 
 #ifdef __cplusplus
 } /* extern "C" */

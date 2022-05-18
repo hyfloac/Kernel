@@ -57,7 +57,7 @@ static void InitPLLArena();
 static PageLinkedList* AllocPLL();
 FASTCALL_GCC static void FASTCALL_MSVC FreePLL(PageLinkedList* pll);
 
-int InitPageMap()
+KError_t InitPageMap()
 {
     memoryTableSize = *(u16*) 0x40000;
     memoryTable =  (ACPIMem*) 0x40008;
@@ -114,12 +114,12 @@ int InitPageMap()
 
     if(!validBlockCount)
     {
-        return PageMap_NoValidPages;
+        return KE_PAGING_NO_VALID_PAGES;
     }
 
     if(memoryTable[memoryTableSize].BaseAddressHigh != 0)
     {
-        return PageMap_No32BitPages;
+        return KE_PAGING_NO_32_BIT_PAGES;
     }
 
     InitPLLArena();
@@ -128,7 +128,7 @@ int InitPageMap()
     if(j >= _BLOCK_SIZE) {                      \
         PageLinkedList* pll = AllocPLL();       \
         if(!pll) {                              \
-            return PageMap_NoMorePLL;           \
+            return KE_PAGING_NO_MORE_PLL;       \
         }                                       \
         pll->Page = currentAddress;             \
         pll->Next = *(PHeads[_INDEX]);          \
@@ -161,7 +161,7 @@ int InitPageMap()
     }
 #undef FILL_BLOCK
 
-    return PageMap_Success;
+    return KE_OK;
 }
 
 FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages(u32* const pPageCount)
