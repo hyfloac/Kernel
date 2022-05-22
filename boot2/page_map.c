@@ -57,7 +57,7 @@ static void InitPLLArena();
 static PageLinkedList* AllocPLL();
 FASTCALL_GCC static void FASTCALL_MSVC FreePLL(PageLinkedList* pll);
 
-int InitPageMap()
+KError_t InitPageMap()
 {
     memoryTableSize = *(u16*) 0x40000;
     memoryTable =  (ACPIMem*) 0x40008;
@@ -114,12 +114,12 @@ int InitPageMap()
 
     if(!validBlockCount)
     {
-        return PageMap_NoValidPages;
+        return KE_PAGING_NO_VALID_PAGES;
     }
 
     if(memoryTable[memoryTableSize].BaseAddressHigh != 0)
     {
-        return PageMap_No32BitPages;
+        return KE_PAGING_NO_32_BIT_PAGES;
     }
 
     InitPLLArena();
@@ -128,7 +128,7 @@ int InitPageMap()
     if(j >= _BLOCK_SIZE) {                      \
         PageLinkedList* pll = AllocPLL();       \
         if(!pll) {                              \
-            return PageMap_NoMorePLL;           \
+            return KE_PAGING_NO_MORE_PLL;       \
         }                                       \
         pll->Page = currentAddress;             \
         pll->Next = *(PHeads[_INDEX]);          \
@@ -161,7 +161,7 @@ int InitPageMap()
     }
 #undef FILL_BLOCK
 
-    return PageMap_Success;
+    return KE_OK;
 }
 
 FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages(u32* const pPageCount)
@@ -395,6 +395,517 @@ FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages(u32* const pPageCount)
 
         return 0;
     }
+}
+
+FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages32Bit(u32* const pPageCount)
+{
+    #define IS_VALID_PAGE(ADDR) ((ADDR) <= (0xFFFFFFFFull - (pageCount * 4096)))
+
+    if(!pPageCount)
+    {
+        return 0;
+    }
+
+    const u32 pageCount = *pPageCount;
+
+    if(!pageCount)
+    {
+        return 0;
+    }
+
+    if(pageCount == 1)
+    {
+        if(P1Head)
+        {
+            PageLinkedList* prev = P1Head;
+
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P1Head = P1Head->Next;
+                FreePLL(prev);
+                SetUsedPages(ret, 1);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = curr->Page;
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+                    FreePLL(curr);
+                    SetUsedPages(ret, 1);
+                    return ret;
+                }
+                prev = curr;
+            }
+        }
+    }
+
+    if(pageCount <= 2)
+    {
+        if(P2Head)
+        {
+            PageLinkedList* prev = P2Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P2Head = P2Head->Next;
+
+                if(pageCount == 1)
+                {
+                    prev->Page += 4096;
+                    prev->Next = P1Head;
+                    P1Head = prev;
+                }
+                else
+                {
+                    FreePLL(prev);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = curr->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 1)
+                    {
+                        curr->Page += 4096;
+                        curr->Next = P1Head;
+                        P1Head = prev;
+                    }
+                    else
+                    {
+                        FreePLL(curr);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+
+        }
+    }
+    
+    if(pageCount <= 4)
+    {
+        if(P4Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P4Head = P4Head->Next;
+
+                if(pageCount == 4)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 4 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 4)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 4 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    if(pageCount <= 8)
+    {
+        if(P8Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P8Head = P8Head->Next;
+
+                if(pageCount == 8)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 8 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 8)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 8 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+
+    if(pageCount <= 16)
+    {
+        if(P16Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P16Head = P16Head->Next;
+
+                if(pageCount == 16)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 16 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 16)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 16 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    if(pageCount <= 32)
+    {
+        if(P32Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P32Head = P32Head->Next;
+
+                if(pageCount == 32)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 32 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 32)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 32 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    if(pageCount <= 64)
+    {
+        if(P64Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P64Head = P64Head->Next;
+
+                if(pageCount == 64)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 64 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 64)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 64 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    if(pageCount <= 128)
+    {
+        if(P128Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P128Head = P128Head->Next;
+
+                if(pageCount == 128)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 128 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 128)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 128 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    if(pageCount <= 256)
+    {
+        if(P256Head)
+        {
+            PageLinkedList* prev = P4Head;
+            if(IS_VALID_PAGE(prev->Page))
+            {
+                const u64 ret = prev->Page;
+                P256Head = P256Head->Next;
+
+                if(pageCount == 256)
+                {
+                    FreePLL(prev);
+                }
+                else
+                {
+                    const u32 dif = 256 - pageCount;
+                    prev->Page += 4096 * pageCount;
+                    RedistributePageHeads(prev, dif);
+                }
+                SetUsedPages(ret, pageCount);
+                return ret;
+            }
+
+            while(prev->Next)
+            {
+                PageLinkedList* const curr = prev->Next;
+                const u64 ret = prev->Page;
+
+                if(IS_VALID_PAGE(ret))
+                {
+                    prev->Next = curr->Next;
+
+                    if(pageCount == 256)
+                    {
+                        FreePLL(curr);
+                    }
+                    else
+                    {
+                        const u32 dif = 256 - pageCount;
+                        curr->Page += 4096 * pageCount;
+                        RedistributePageHeads(curr, dif);
+                    }
+                    SetUsedPages(ret, pageCount);
+                    return ret;
+                }
+
+                prev = curr;
+            }
+        }
+    }
+    
+    // Find the largest set of pages available.
+    {
+        i32 index = 8;
+
+        while(index >= 0)
+        {
+            if(*(PHeads[index]))
+            {
+                PageLinkedList* prev = *(PHeads[index]);
+                if(IS_VALID_PAGE(prev->Page))
+                {
+                    const u64 ret = prev->Page;
+                    *(PHeads[index]) = prev->Next;
+
+                    FreePLL(prev);
+                    *pPageCount = 1 << index;
+                    SetUsedPages(ret, *pPageCount);
+                    return ret;
+                }
+
+                while(prev->Next)
+                {
+                    PageLinkedList* const curr = prev->Next;
+                    const u64 ret = prev->Page;
+
+                    if(IS_VALID_PAGE(ret))
+                    {
+                        prev->Next = curr->Next;
+
+                        FreePLL(curr);
+                        *pPageCount = 1 << index;
+                        SetUsedPages(ret, *pPageCount);
+                        return ret;
+                    }
+
+                    prev = curr;
+                }
+            }
+            --index;
+        }
+
+        return 0;
+    }
+
+    #undef IS_VALID_PAGE
 }
 
 /**

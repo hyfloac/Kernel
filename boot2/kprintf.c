@@ -473,6 +473,24 @@ FASTCALL_GCC static int FASTCALL_MSVC internal_kvprintf(const char* const format
                     break;
                 }
                 case 'p':
+                {
+                    const u32 i = va_arg(vList, u32);
+                    Xtoap(i, intBuffer);
+                    if(flags.AlternativeForm1)
+                    {
+                        ConWriteChar('0');
+                        ConWriteChar('X');
+                        writeCount += 2;
+                    }
+                    else if(flags.AlternativeForm2)
+                    {
+                        ConWriteChar('0');
+                        ConWriteChar('x');
+                        writeCount += 2;
+                    }
+                    writeCount += ConWriteStringColor(intBuffer, bg, fg);
+                    break;
+                }
                 case 'X':
                 {
                     const u32 i = va_arg(vList, u32);
