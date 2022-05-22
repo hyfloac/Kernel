@@ -284,7 +284,7 @@ static void InitPagingEntries()
 static void InitKernelPageEntries()
 {
     u32 pageCount = 1;
-    PAEPageTableEntry* firstTable = (PAEPageTableEntry*) (u32) GetPhysPages(&pageCount);
+    PAEPageTableEntry* firstTable = (PAEPageTableEntry*) (u32) GetPhysPages32Bit(&pageCount);
 
     u32 ptAddress = (u32) firstTable;
     ptAddress /= 4096;
