@@ -93,6 +93,7 @@ isr_bouncepad: ; Don't need to save CS, EIP, or EFlags
 
     mov ax, 0x10    ; Set Segment Registers
     mov ds, ax
+    mov gs, ax
     mov es, ax
     mov ss, ax
 

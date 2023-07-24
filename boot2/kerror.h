@@ -20,6 +20,10 @@ typedef i32 KError_t;
 #define KE_PAGING_NO_32_BIT_PAGES (-65)
 #define KE_PAGING_NO_MORE_PLL (-66)
 
+#define KE_DRIVER_TYPE_MISMATCH (-70)
+#define KE_DRIVER_SYSTEM_TOO_OLD (-71)
+#define KE_DRIVER_TYPE_NOT_FOUND (-72)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -69,6 +73,12 @@ inline void KernelClearErrorMessage()
  * @return The detailed error message.
  */
 FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(int acquire);
+
+FASTCALL_GCC inline const char* FASTCALL_MSVC KernelGetErrorMessageSafe(const int acquire)
+{
+    const char* const message = KernelGetErrorMessage(acquire);
+    return message ? message : "";
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

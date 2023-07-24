@@ -98,6 +98,8 @@ FASTCALL_GCC u32 FASTCALL_MSVC ConWriteString(const char* str);
 FASTCALL_GCC u32 FASTCALL_MSVC ConWriteCharacterString(const Character* str);
 FASTCALL_GCC u32 FASTCALL_MSVC ConWriteStringColor(const char* str, ConsoleColor bg, ConsoleColor fg);
 
+FASTCALL_GCC void FASTCALL_MSVC ConBackspace(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
@@ -125,6 +127,8 @@ FASTCALL_GCC inline void FASTCALL_MSVC WriteChar(const char c, const ConsoleColo
 FASTCALL_GCC inline u32 FASTCALL_MSVC WriteString(const char* const str) noexcept { return ConWriteString(str); }
 FASTCALL_GCC inline u32 FASTCALL_MSVC WriteString(const Character* const str) noexcept { return ConWriteCharacterString(str); }
 FASTCALL_GCC inline u32 FASTCALL_MSVC WriteString(const char* const str, const ConsoleColor bg, const ConsoleColor fg) noexcept { return ConWriteStringColor(str, bg, fg); }
+
+FASTCALL_GCC inline void FASTCALL_MSVC Backspace() noexcept { ConBackspace(); }
 
 }
 #endif

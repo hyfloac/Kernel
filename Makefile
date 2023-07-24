@@ -14,7 +14,7 @@ CRTN_OBJ = crt/crtn.o
 CRT_OBJS := $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 ASM_OBJS = build/asm/boot2.o build/asm/interrupt.o build/asm/io.o
-OBJS = build/kmain.o build/kerror.o build/paging.o build/interrupt.o build/checkmem.o build/itoa.o build/console.o build/page_map.o build/pic.o build/kstring.o build/kprintf.o build/serial.o
+OBJS = build/kmain.o build/kerror.o build/paging.o build/interrupt.o build/checkmem.o build/itoa.o build/console.o build/page_map.o build/pic.o build/kstring.o build/kprintf.o build/serial.o build/ps2.o build/keyboard.o build/driver.o build/kalloc.o
 
 .PHONY: all clean depend
 

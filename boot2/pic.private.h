@@ -21,16 +21,10 @@
 extern "C" {
 #endif
 
-enum ICW1_TriggerMode
+enum ICW1_RequiresICW4
 {
-    ICW1_EDGE_TRIGGER_MODE = 0,
-    ICW1_LEVEL_TRIGGER_MODE = 1
-};
-
-enum ICW1_SuccessiveInterruptSize
-{
-    ICW1_SUCCESSIVE_INTERRUPT_8 = 0,
-    ICW1_SUCCESSIVE_INTERRUPT_4 = 1
+    ICW1_DOES_NOT_NEED_ICW4 = 0,
+    ICW1_NEEDS_ICW4 = 1,
 };
 
 enum ICW1_Cascade
@@ -39,22 +33,28 @@ enum ICW1_Cascade
     ICW1_SINGLE_MODE = 1
 };
 
-enum ICW1_RequiresICW4
+enum ICW1_SuccessiveInterruptSize
 {
-    ICW1_NEEDS_ICW4 = 0,
-    ICW1_DOES_NOT_NEED_ICW4 = 1
+    ICW1_SUCCESSIVE_INTERRUPT_8 = 0,
+    ICW1_SUCCESSIVE_INTERRUPT_4 = 1
+};
+
+enum ICW1_TriggerMode
+{
+    ICW1_EDGE_TRIGGER_MODE = 0,
+    ICW1_LEVEL_TRIGGER_MODE = 1
 };
 
 typedef union
 {
     struct
     {
-        u8 _8085 : 3;
-        u8 Issued : 1;
-        u8 TriggerMode : 1;
-        u8 SuccessiveInterruptSize : 1;
-        u8 Cascade : 1;
         u8 RequiresICW4 : 1;
+        u8 Cascade : 1;
+        u8 SuccessiveInterruptSize : 1;
+        u8 TriggerMode : 1;
+        u8 Issued : 1;
+        u8 _8085 : 3;
     };
     u8 icw1;
 } ICW1;
@@ -81,10 +81,17 @@ typedef union
     u8 icw3;
 } ICW3;
 
-enum ICW4_FullyNestedMode
+
+enum ICW4_80Mode
 {
-    ICW4_NO_SPECIAL_FULLY_NESTED_MODE = 0,
-    ICW4_SPECIAL_FULLY_NESTED_MODE = 1
+    ICW4_8085_MODE = 0,
+    ICW4_8086_8088_MODE = 1
+};
+
+enum ICW4_EndOfInterruptMode
+{
+    ICW4_NORMAL_EOI_MODE = 0,
+    ICW4_AUTO_EOI_MODE = 1
 };
 
 enum ICW4_BufferMode
@@ -98,27 +105,21 @@ enum ICW4_BufferMode
 
 #define ICW4_IS_NON_BUFFERED(_ICW4_BufferMode) ((_ICW4_BufferMode) == ICW4_NON_BUFFERED_0 || (_ICW4_BufferMode) == ICW4_NON_BUFFERED_1)
 
-enum ICW4_EndOfInterruptMode
+enum ICW4_FullyNestedMode
 {
-    ICW4_NORMAL_EOI_MODE = 0,
-    ICW4_AUTO_EOI_MODE = 1
-};
-
-enum ICW4_80Mode
-{
-    ICW4_8085_MODE = 0,
-    ICW4_8086_8088_MODE = 1
+    ICW4_NO_SPECIAL_FULLY_NESTED_MODE = 0,
+    ICW4_SPECIAL_FULLY_NESTED_MODE = 1
 };
 
 typedef union
 {
     struct
     {
-        u8 Reserved : 3; // 0
-        u8 FullyNestedMode : 1;
-        u8 BufferMode : 2;
-        u8 EndOfInterruptMode : 1;
         u8 _80Mode : 1;
+        u8 EndOfInterruptMode : 1;
+        u8 BufferMode : 2;
+        u8 FullyNestedMode : 1;
+        u8 Reserved : 3; // 0
     };
     u8 icw4;
 } ICW4;
@@ -127,14 +128,14 @@ typedef union
 {
     struct
     {
-        u8 ParallelPrinter : 1;
-        u8 Diskette : 1;
-        u8 FixedDisk : 1;
-        u8 SerialPort1 : 1;
-        u8 SerialPort2 : 1;
-        u8 Video : 1;
-        u8 KeyboardMouseRTC : 1;
         u8 Timer : 1;
+        u8 Keyboard : 1;
+        u8 RedirectCascade : 1;
+        u8 SerialPort2 : 1;
+        u8 SerialPort1 : 1;
+        u8 ParallelPrinter2 : 1;
+        u8 Diskette : 1;
+        u8 ParallelPrinter1 : 1;
     };
     u8 ocw1;
 } OCW1_PIC1;
@@ -143,14 +144,14 @@ typedef union
 {
     struct
     {
+        u8 RealTimeClock : 1;
         u8 Reserved0 : 1;
-        u8 FixedDisk : 1;
-        u8 CoprocessorException : 1;
-        u8 Mouse : 1;
         u8 Reserved1 : 1;
         u8 Reserved2 : 1;
-        u8 RedirectCascade : 1;
-        u8 RealTimeClock : 1;
+        u8 Mouse : 1;
+        u8 CoprocessorException : 1;
+        u8 PrimaryHardDisk : 1;
+        u8 SecondaryHardDisk : 1;
     };
     u8 ocw1;
 } OCW1_PIC2;

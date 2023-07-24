@@ -12,6 +12,8 @@ typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
 
+typedef u8 b8;
+
 #ifdef KERNEL_LONG_MODE
 typedef i64 iSys;
 typedef u64 uSys;

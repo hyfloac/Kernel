@@ -11,6 +11,9 @@
         "kprintf.h": "c",
         "itoa.h": "c",
         "kstring.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "driver.h": "c",
+        "keyboard.h": "c",
+        "kalloc.h": "c"
     }
 }

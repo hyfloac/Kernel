@@ -15,7 +15,10 @@ FASTCALL_GCC const char* FASTCALL_MSVC KernelLocalizeErrorCode(const KError_t er
             case KE_INVALID_ARG: return "Invalid Arg";
             case KE_PAGING_NO_VALID_PAGES: return "No Valid Pages";
             case KE_PAGING_NO_32_BIT_PAGES: return "No 32-Bit Pages";
-            case KE_PAGING_NO_MORE_PLL: return "No More Page Linked List Nodes";
+            case KE_PAGING_NO_MORE_PLL: return "No more page linked list nodes";
+            case KE_DRIVER_TYPE_MISMATCH: return "Driver type did not match expected value";
+            case KE_DRIVER_SYSTEM_TOO_OLD: return "The driver version is newer than this system was built for";
+            case KE_DRIVER_TYPE_NOT_FOUND: return "The driver registration type was not found";
             default: return "Unknown Error";
         }
     }

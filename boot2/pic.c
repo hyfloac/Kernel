@@ -1,6 +1,7 @@
 #include "pic.h"
 #include "pic.private.h"
 #include "io.h"
+#include "kprintf.h"
 
 FASTCALL_GCC void FASTCALL_MSVC PICRemap(const u8 offset1, const u8 offset2)
 {
@@ -9,11 +10,11 @@ FASTCALL_GCC void FASTCALL_MSVC PICRemap(const u8 offset1, const u8 offset2)
 
     ICW1 icw1Init;
     icw1Init.icw1 = 0;
-    icw1Init.Issued = 1;
-    icw1Init.TriggerMode = ICW1_EDGE_TRIGGER_MODE;
-    icw1Init.SuccessiveInterruptSize = ICW1_SUCCESSIVE_INTERRUPT_8;
-    icw1Init.Cascade = ICW1_CASCADE_MODE;
     icw1Init.RequiresICW4 = ICW1_NEEDS_ICW4;
+    icw1Init.Cascade = ICW1_CASCADE_MODE;
+    icw1Init.SuccessiveInterruptSize = ICW1_SUCCESSIVE_INTERRUPT_8;
+    icw1Init.TriggerMode = ICW1_EDGE_TRIGGER_MODE;
+    icw1Init.Issued = 1;
 
     out8(PIC1_COMMAND, icw1Init.icw1); // Start initialization sequence in cascade mode.
     io_wait();
@@ -32,10 +33,10 @@ FASTCALL_GCC void FASTCALL_MSVC PICRemap(const u8 offset1, const u8 offset2)
 
     ICW4 icw4Init;
     icw4Init.icw4 = 0;
-    icw4Init.FullyNestedMode = ICW4_NO_SPECIAL_FULLY_NESTED_MODE;
-    icw4Init.BufferMode = ICW4_NON_BUFFERED;
-    icw4Init.EndOfInterruptMode = ICW4_NORMAL_EOI_MODE;
     icw4Init._80Mode = ICW4_8086_8088_MODE;
+    icw4Init.EndOfInterruptMode = ICW4_NORMAL_EOI_MODE;
+    icw4Init.BufferMode = ICW4_NON_BUFFERED;
+    icw4Init.FullyNestedMode = ICW4_NO_SPECIAL_FULLY_NESTED_MODE;
 
     out8(PIC1_DATA, icw4Init.icw4);
     io_wait();

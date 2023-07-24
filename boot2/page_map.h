@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include "callspec.h"
 #include "kstdint.h"
 #include "kerror.h"

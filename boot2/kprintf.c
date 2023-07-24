@@ -290,9 +290,11 @@ static int IntToStr(char* const buffer, const u32 padSize, const PrintfFlags fla
         buffer[writeIndex++] = GetDigitCharU(digit);
     }
 
-    for(u32 i = numberBegin; i < writeIndex / 2; ++i)
+    const u32 maxFlipIndex = (writeIndex + numberBegin) / 2;
+
+    for(u32 i = numberBegin; i < maxFlipIndex; ++i)
     {
-        const u32 index = writeIndex - i - 1;
+        const u32 index = writeIndex - i;
         const char tmp = buffer[i];
         buffer[i] = buffer[index];
         buffer[index] = tmp;

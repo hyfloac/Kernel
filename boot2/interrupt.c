@@ -3,14 +3,18 @@
 #include "console.h"
 #include "itoa.h"
 #include "pic.h"
+#include "io.h"
+#include "kprintf.h"
+#include "ps2.h"
+#include "keyboard.h"
 
 #define IDT_MAX_DESCRIPTORS 256
 
 _Static_assert(sizeof(IDTEntry32) == 8, "IDTEntry32 is not the correct size.");
 _Static_assert(sizeof(IDTR32) == 6, "IDTR32 is not the correct size.");
 
-__attribute__((aligned(64))) static IDTEntry32 idt32[256];
-// __attribute__((aligned(64))) static IDTEntry64 idt64[256];
+__attribute__((aligned(64))) static IDTEntry32 idt32[IDT_MAX_DESCRIPTORS];
+// __attribute__((aligned(64))) static IDTEntry64 idt64[IDT_MAX_DESCRIPTORS];
 
 static IDTR32 idtr32;
 // static IDTR64 idtr64;
@@ -41,6 +45,19 @@ static FASTCALL_GCC void FASTCALL_MSVC IsrExceptionSimdFloatingPointError(IsrExc
 static FASTCALL_GCC void FASTCALL_MSVC IsrExceptionVirtualizationException(IsrExceptionFrame* const frame);
 static FASTCALL_GCC void FASTCALL_MSVC IsrExceptionControlProtectionException(IsrExceptionFrame* const frame);
 
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicPit();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicKeyboard();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCom2();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCom1();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicLpt2();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicFloppy();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicLpt1();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCmos();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicMouse();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicFpu();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicPrimaryAta();
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicSecondaryAta();
+
 void IDTSetDescriptor32(const u8 vector, u32 isr, const u8 attributes)
 {
     idt32[vector] = CreateIDTEntry32(isr, CODE_SEG, attributes);
@@ -62,7 +79,7 @@ void InitIDT32()
 
     for(u32 vector = 32; vector < 48; ++vector)
     {
-        IDTSetDescriptor32((u8) vector, (u32) isr_stub_table32[vector], 0x8E ? 0 : 0);
+        IDTSetDescriptor32((u8) vector, (u32) isr_stub_table32[vector], 0x8E);
     }
 
     for(u32 vector = 48; vector < IDT_MAX_DESCRIPTORS; ++vector)
@@ -84,6 +101,7 @@ FASTCALL_GCC void FASTCALL_MSVC isr_handler(const u32 vector)
 {
     if(vector >= 0x20 && vector < 0x30)
     {
+        // Handle spurious IRQ on Master controller.
         if(vector == 0x27)
         {
             const u16 isr = PICGetISR();
@@ -91,11 +109,39 @@ FASTCALL_GCC void FASTCALL_MSVC isr_handler(const u32 vector)
             {
                 return;
             }
-
-            
-
-            PICSendEOI(vector - 0x20);
         }
+        // Handle spurious IRQ on Slave controller.
+        else if(vector == 0x2F)
+        {
+            const u16 isr = PICGetISR();
+            if(!(isr & 0x08))
+            {
+                PICSendEOI(0x02);
+                return;
+            }
+        }
+
+        switch(vector - 0x20)
+        {
+            case 0x0: IsrPicPit(); break;
+            case 0x1: IsrPicKeyboard(); break;
+            case 0x2: break; // The cascade IRQ, never sent.
+            case 0x3: IsrPicCom2(); break;
+            case 0x4: IsrPicCom1(); break;
+            case 0x5: IsrPicLpt2(); break;
+            case 0x6: IsrPicFloppy(); break;
+            case 0x7: IsrPicLpt1(); break;
+            case 0x8: IsrPicCmos(); break;
+            case 0x9: break; // Free for peripherals / legacy SCSI / NIC
+            case 0xA: break; // Free for peripherals / SCSI / NIC
+            case 0xB: break; // Free for peripherals / SCSI / NIC
+            case 0xC: IsrPicMouse(); break;
+            case 0xD: IsrPicFpu(); break;
+            case 0xE: IsrPicPrimaryAta(); break;
+            case 0xF: IsrPicSecondaryAta(); break;
+        }
+
+        PICSendEOI(vector - 0x20);
     }
 }
 
@@ -139,13 +185,24 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
     buf[0] = '0';
     buf[1] = 'x';
 
-    ConSetCursorCoord(0, 0);
+    u32 yCoord = 0;
+
+    ConSetCursorCoord(0, yCoord++);
     ConWriteStringColor("Exception Triggered: ", ConColor_Black, ConColor_White);
     Xtoap(frame->Vector, buf + 2);
     ConWriteStringColor(buf, ConColor_Black, ConColor_White);
 
     {
-        ConSetCursorCoord(0, 1);
+        char bBuf[33];
+        ConSetCursorCoord(0, yCoord++);
+        ConWriteStringColor("Error Code", ConColor_Black, ConColor_LightBlue);
+        ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
+        btoap(frame->ErrorCode, bBuf);
+        ConWriteStringColor(bBuf, ConColor_Black, ConColor_Cyan);
+    }
+
+    {
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("eax", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         Xtoap(frame->eax, buf + 2);
@@ -157,7 +214,7 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
         ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
     }
     {
-        ConSetCursorCoord(0, 2);
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("ecx", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         Xtoap(frame->ecx, buf + 2);
@@ -169,7 +226,7 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
         ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
     }
     {
-        ConSetCursorCoord(0, 3);
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("esi", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         Xtoap(frame->esi, buf + 2);
@@ -181,7 +238,7 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
         ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
     }
     {
-        ConSetCursorCoord(0, 4);
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("esp", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         Xtoap(frame->esp, buf + 2);
@@ -193,7 +250,7 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
         ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
     }
     {
-        ConSetCursorCoord(0, 5);
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("eip", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         Xtoap(frame->eip, buf + 2);
@@ -201,11 +258,37 @@ static FASTCALL_GCC void FASTCALL_MSVC DumpCPUState(const IsrExceptionFrame* con
 
 
         char bBuf[33];
-        ConSetCursorCoord(0, 6);
+        ConSetCursorCoord(0, yCoord++);
         ConWriteStringColor("eflags", ConColor_Black, ConColor_LightBlue);
         ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
         btoap(frame->eflags, bBuf);
         ConWriteStringColor(bBuf, ConColor_Black, ConColor_Cyan);
+    }
+
+    {
+        ConSetCursorCoord(0, yCoord++);
+        ConWriteStringColor("cr4", ConColor_Black, ConColor_LightBlue);
+        ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
+        Xtoap(frame->cr4, buf + 2);
+        ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
+
+        ConWriteStringColor(" cr3", ConColor_Black, ConColor_LightBlue);
+        ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
+        Xtoap(frame->cr3, buf + 2);
+        ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
+    }
+
+    {
+        ConSetCursorCoord(0, yCoord++);
+        ConWriteStringColor("cr2", ConColor_Black, ConColor_LightBlue);
+        ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
+        Xtoap(frame->cr2, buf + 2);
+        ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
+
+        ConWriteStringColor(" cr0", ConColor_Black, ConColor_LightBlue);
+        ConWriteStringColor("=", ConColor_Black, ConColor_LightGray);
+        Xtoap(frame->cr0, buf + 2);
+        ConWriteStringColor(buf, ConColor_Black, ConColor_Cyan);
     }
 }
 
@@ -376,6 +459,89 @@ static FASTCALL_GCC void FASTCALL_MSVC IsrExceptionControlProtectionException(Is
     ConSetCursorCoord(0, 16);
     ConWriteStringColor("Control Protection Exception", ConColor_Black, ConColor_Red);
 }
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicPit()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicKeyboard()
+{
+    const u32 keyCode = KeyboardReadKeyCode();
+
+    if(KEY_IS_PRESSED(keyCode))
+    {
+        if(KEY_CODE(keyCode) == KEY_CODE_BACKSPACE)
+        {
+            ConBackspace();
+        }
+        else if(KEY_CODE(keyCode) == KEY_CODE_ENTER)
+        {
+            ConNewLine();
+        }
+        else
+        {
+            const u32 unicode = CodepointFromKeyCode(keyCode, KEYBOARD_LAYOUT_US_QWERTY);
+            if(unicode)
+            {
+                ConWriteChar(unicode);
+            }
+        }
+    }
+
+    ConSwapBuffers();
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCom2()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCom1()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicLpt2()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicFloppy()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicLpt1()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicCmos()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicMouse()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicFpu()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicPrimaryAta()
+{
+
+}
+
+static FASTCALL_GCC void FASTCALL_MSVC IsrPicSecondaryAta()
+{
+
+}
+
 
 // void InitIDT64()
 // {

@@ -83,7 +83,7 @@ FASTCALL_GCC void FASTCALL_MSVC ConWriteChar(const char c)
 FASTCALL_GCC void FASTCALL_MSVC ConWriteCharacater(const Character c)
 {
     ConBackBuffer[ConIndex++] = c;
-        CheckNewLine();
+    CheckNewLine();
 }
 
 FASTCALL_GCC void FASTCALL_MSVC ConWriteCharColor(const char c, const ConsoleColor bg, const ConsoleColor fg)
@@ -132,6 +132,14 @@ FASTCALL_GCC u32 FASTCALL_MSVC ConWriteStringColor(const char* const str, const 
         CheckNewLine();
     }
     return i;
+}
+
+FASTCALL_GCC void FASTCALL_MSVC ConBackspace(void)
+{
+    const u32 cursor = ConGetCursor() - 1;
+    ConSetCursor(cursor);
+    ConWriteCharColor(' ', ConColor_Black, ConColor_Black);
+    ConSetCursor(cursor);
 }
 
 FASTCALL_GCC static u32 FASTCALL_MSVC CoordToIndex(const u32 x, const u32 y)

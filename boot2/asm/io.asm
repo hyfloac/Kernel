@@ -36,7 +36,7 @@ in16: ; u16 __fastcall in16(u16 port)
     in ax, dx
     ret
 
-in32: ; u32 __fastcall in32(u32 port)
+in32: ; u32 __fastcall in32(u16 port)
     mov dx, cx
     in eax, dx
     ret
