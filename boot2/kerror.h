@@ -11,10 +11,13 @@
  */
 typedef i32 KError_t;
 
+#define KE_IS_OK(Error) (((i32) (Error)) >= 0)
+
 #define KE_OK (0)
 
 #define KE_FAIL (-1)
 #define KE_INVALID_ARG (-2)
+#define KE_OUT_OF_MEMORY (-3)
 
 #define KE_PAGING_NO_VALID_PAGES (-64)
 #define KE_PAGING_NO_32_BIT_PAGES (-65)

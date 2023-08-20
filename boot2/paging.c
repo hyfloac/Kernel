@@ -4,6 +4,10 @@
 #include "page_map.h"
 #include "kprintf.h"
 
+#ifndef LOG_MAP_PAGE
+  #define LOG_MAP_PAGE (0)
+#endif
+
 typedef union
 {
     struct 
@@ -164,6 +168,7 @@ void SetupPaging32()
     InitPDPT();
     InitKernelPageEntries();
 
+#if 0
     PAEPageDirectoryEntry* firstPageDirectory = (PAEPageDirectoryEntry*) (PageDirectoryPointerTable[0].PhysicalAddressLow << 12);
     PAEPageTableEntry* firstPageTable = (PAEPageTableEntry*) (firstPageDirectory[0].PhysicalAddressLow << 12);
 
@@ -176,10 +181,9 @@ void SetupPaging32()
     u64 pdpt0Address = ((((u64) PageDirectoryPointerTable[0].PhysicalAddressHigh) << 32) | PageDirectoryPointerTable[0].PhysicalAddressLow) << 12;
 
     kprintf("0x%p%p\n", (u32) (pdpt0Address >> 32), (u32) pdpt0Address);
-
     kprintf("0x%p\n", PageDirectoryPointerTable);
+#endif
 
-// return;
     enable_pae32();
     set_cr3_page_pointer32(PageDirectoryPointerTable);
 }
@@ -208,16 +212,22 @@ PAEPointer GetPhysAddress(const void* const virtualAddress)
     // }
     
 
-    const u32 pdindex = (u32) virtualAddress >> 22;
-    const u32 ptindex = (u32) virtualAddress >> 12 & 0x03FF;
+    // const u32 pdindex = (u32) virtualAddress >> 22
+    const u32 ptIndex = (u32) virtualAddress >> 12;
  
     // u32* const pd = (u32*) 0xFFFFF000;
     // Here you need to check whether the PD entry is present.
  
-    u32* const pt = ((u32*) 0xFFC00000) + (0x400 * pdindex);
+    // u32* const pt = ((u32*) 0xFFC00000) + (0x400 * pdindex);
     // Here you need to check whether the PT entry is present.
+
+    PAEPageTableEntry* pte = &AllPageTableEntries[ptIndex];
  
-    PAEPointer ret = { 0, ((pt[ptindex] & ~0xFFF) + ((u32) virtualAddress & 0xFFF)) };
+    u64 physAddress = (((u64) pte->PhysicalAddressHigh) << 20) | pte->PhysicalAddressLow;
+    physAddress <<= 12;
+    physAddress |= (((u32) virtualAddress) & 0x0FFF);
+    PAEPointer ret = { (u32) (physAddress >> 32), (u32) (physAddress & 0xFFFFFFFF) };
+    // PAEPointer ret = { pte->PhysicalAddressHigh, pte->PhysicalAddressLow };
     return ret;
 }
 
@@ -244,29 +254,39 @@ void MapPage(u64 const physicalAddress, void* const virtualAddress, const u32 re
     const u32 pdIndex = (u32) virtualAddress >> 21;
     const u32 ptMapIndex = (u32) virtualAddress >> 12;
 
+    #if LOG_MAP_PAGE
     kprintf("Mapping 0x%0X%0X to 0x%p\n", (u32) (physicalAddress >> 32), (u32) physicalAddress, virtualAddress);
     kprintf("Index in the sequential Page Directory that may need to be mapped: 0x%X\n", pdIndex);
     kprintf("Index in the sequential Page Table Map that needs to be mapped: 0x%X\n", ptMapIndex);
+    #endif
 
     // Do we need to create a new page table?
     if(PageDirectoriesVirtual[pdIndex]._packed == 0)
     {
+        #if LOG_MAP_PAGE
         kprintf("Need to map a page into the page directory.\n");
+        #endif
 
         u32 pageCount = 1;
         u64 newPTPageNumber = GetPhysPages(&pageCount) >> 12;
 
+        #if LOG_MAP_PAGE
         kprintf("Mapping 0x%0X%0X to index 0x%X in the Page Directory and Page Map.\n", (u32) (newPTPageNumber >> 20), (u32) (newPTPageNumber << 12), pdIndex);
         kprintf("Address 0x%p in the Directories\n", &PageDirectoriesVirtual[pdIndex]);
         kprintf("Address 0x%p in the Page Table Map\n", &PageTableMapVirtual[pdIndex]);
+        #endif
 
         PageDirectoriesVirtual[pdIndex] = CreatePAEPageDirectoryEntry(1, 1, 0, 0, 0, newPTPageNumber & 0x000FFFFF, newPTPageNumber >> 20);
 
+        #if LOG_MAP_PAGE
         kprintf("Page Directory Mapped.\n");
+        #endif
 
         PageTableMapVirtual[pdIndex] = CreatePAEPageTableEntry(1, 1, 0, 0, 0, newPTPageNumber & 0x000FFFFF, newPTPageNumber >> 20);
 
+        #if LOG_MAP_PAGE
         kprintf("Page Table Mapping Mapped.\n");
+        #endif
     }
 
     // PAEPageTableEntry* pt = ((PAEPageTableEntry*) 0xFFC00000) + (0x400 * pdindex);
@@ -277,11 +297,15 @@ void MapPage(u64 const physicalAddress, void* const virtualAddress, const u32 re
 
     const u64 phsyicalAddressPageNumber  = physicalAddress >> 12;
 
+    #if LOG_MAP_PAGE
     kprintf("Setting the mapping at index 0x%X 0x%p\n", ptMapIndex, &AllPageTableEntries[ptMapIndex]);
+    #endif
 
     AllPageTableEntries[ptMapIndex] = CreatePAEPageTableEntry(1, readWrite, userSupervisor, pageLevelWriteThrough, pageLevelCacheDisable, (u32) (phsyicalAddressPageNumber & 0x000FFFFF), (u32) (phsyicalAddressPageNumber >> 20));
  
+    #if LOG_MAP_PAGE
     kprintf("Page has been mapped.\n");
+    #endif
 
     // Now you need to flush the entry in the TLB
     // or you might not notice the change.

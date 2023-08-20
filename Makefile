@@ -1,7 +1,7 @@
 NASM := nasm
 CPPC := g++
 CC := gcc
-WARNINGS := -Wall -Wextra
+WARNINGS := -Wall -Wextra -Wno-multichar
 SIMD := -mno-sse -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4 -mno-avx -mno-avx2
 COMMON_FLAGS :=  -O1 -m32 -nostdlib -ffreestanding -mno-red-zone -fno-pie -flto $(SIMD) $(WARNINGS) -T boot2/boot.ld
 CPPFLAGS := $(COMMON_FLAGS) -std=c++11 -fno-exceptions -fno-rtti
@@ -14,7 +14,9 @@ CRTN_OBJ = crt/crtn.o
 CRT_OBJS := $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 ASM_OBJS = build/asm/boot2.o build/asm/interrupt.o build/asm/io.o
-OBJS = build/kmain.o build/kerror.o build/paging.o build/interrupt.o build/checkmem.o build/itoa.o build/console.o build/page_map.o build/pic.o build/kstring.o build/kprintf.o build/serial.o build/ps2.o build/keyboard.o build/driver.o build/kalloc.o
+OBJS0 = build/kmain.o build/kerror.o build/paging.o build/interrupt.o build/checkmem.o build/itoa.o build/console.o build/page_map.o build/pic.o build/kstring.o build/kprintf.o build/serial.o
+OBJS1 = build/ps2.o build/keyboard.o build/driver.o build/kalloc.o build/pool_allocator.o build/command_line.o
+OBJS = $(OBJS0) $(OBJS1)
 
 .PHONY: all clean depend
 

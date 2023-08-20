@@ -458,7 +458,14 @@ FASTCALL_GCC static int FASTCALL_MSVC internal_kvprintf(const char* const format
                 case 'x':
                 {
                     const u32 i = va_arg(vList, u32);
-                    xtoa(i, intBuffer);
+                    if(flags.PadZeros)
+                    {
+                        xtoap(i, intBuffer);
+                    }
+                    else
+                    {
+                        xtoa(i, intBuffer);
+                    }
                     if(flags.AlternativeForm1)
                     {
                         ConWriteChar('0');
@@ -496,7 +503,14 @@ FASTCALL_GCC static int FASTCALL_MSVC internal_kvprintf(const char* const format
                 case 'X':
                 {
                     const u32 i = va_arg(vList, u32);
-                    Xtoa(i, intBuffer);
+                    if(flags.PadZeros)
+                    {
+                        Xtoap(i, intBuffer);
+                    }
+                    else
+                    {
+                        Xtoa(i, intBuffer);
+                    }
                     if(flags.AlternativeForm1)
                     {
                         ConWriteChar('0');

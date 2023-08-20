@@ -467,7 +467,10 @@ static FASTCALL_GCC void FASTCALL_MSVC IsrPicPit()
 
 static FASTCALL_GCC void FASTCALL_MSVC IsrPicKeyboard()
 {
-    const u32 keyCode = KeyboardReadKeyCode();
+#if 1
+    KeyboardNotifyKeyEvent(GetPS2KeyboardPDO());
+#else
+    const u32 keyCode = KeyboardReadKeyCode(GetPS2KeyboardPDO());
 
     if(KEY_IS_PRESSED(keyCode))
     {
@@ -481,7 +484,7 @@ static FASTCALL_GCC void FASTCALL_MSVC IsrPicKeyboard()
         }
         else
         {
-            const u32 unicode = CodepointFromKeyCode(keyCode, KEYBOARD_LAYOUT_US_QWERTY);
+            const u32 unicode = CodepointFromKeyCode(GetPS2KeyboardPDO(), keyCode, KEYBOARD_LAYOUT_US_QWERTY);
             if(unicode)
             {
                 ConWriteChar(unicode);
@@ -490,6 +493,7 @@ static FASTCALL_GCC void FASTCALL_MSVC IsrPicKeyboard()
     }
 
     ConSwapBuffers();
+#endif
 }
 
 static FASTCALL_GCC void FASTCALL_MSVC IsrPicCom2()

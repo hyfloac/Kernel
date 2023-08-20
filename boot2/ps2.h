@@ -14,12 +14,12 @@ u8 PS2ReadData(void);
 u32 PS2ReadKeyCode(void);
 b8 PS2IsKeyPressed(const u32 keyCode);
 KeyboardToggleBits PS2GetKeyboardToggleBits(void);
-b8 PS2IsCapsLockActive(void);
-b8 PS2IsScrollLockActive(void);
-b8 PS2IsNumLockActive(void);
+
+struct PhysicalDeviceObject;
 
 KError_t RegisterPS2KeyboardDriver(void);
+PhysicalDeviceObject* GetPS2KeyboardPDO(void);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif

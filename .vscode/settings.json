@@ -14,6 +14,10 @@
         "io.h": "c",
         "driver.h": "c",
         "keyboard.h": "c",
-        "kalloc.h": "c"
+        "kalloc.h": "c",
+        "math.h": "c",
+        "kmaths.h": "c",
+        "type_traits": "c",
+        "memcpy.h": "c"
     }
 }

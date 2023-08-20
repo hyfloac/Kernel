@@ -16,5 +16,5 @@ FASTCALL_GCC extern u32 FASTCALL_MSVC in32(u16 port);
 extern void io_wait();
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif

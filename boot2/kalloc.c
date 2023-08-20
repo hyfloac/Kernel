@@ -6,37 +6,60 @@
 
 #define BASE_ALLOC_ADDRESS (0xC0000000)
 
-static u32 currentAllocAddress = BASE_ALLOC_ADDRESS;
+static u32 currentAllocAddress;
+
+void InitKAlloc(void)
+{
+    currentAllocAddress = BASE_ALLOC_ADDRESS;
+
+    u32 physicalPageCount = 1;
+    const u64 physicalAddress = GetPhysPages(&physicalPageCount);
+
+    MapPage(physicalAddress, (void*) currentAllocAddress, 1, 0, 0, 0);
+}
+
+static u32 AlignTo(const u32 val, const u32 alignment)
+{
+    if(alignment == 1 || val % alignment == 0)
+    { return val; }
+    return (val + alignment) & ~(alignment - 1);
+}
 
 // A lazy as fuck allocator that just gives you pages.
 void* kalloc(const uSys size)
 {
-    u32 pageCount = (u32) (size / 4096);
+    const u32 endAddress = AlignTo(currentAllocAddress + size, 8);
 
-    if(size % 4096 != 0)
-    {
-        ++pageCount;
-    }
+    const u32 currentPage = (currentAllocAddress >> 12);
+    const u32 lastPage = (endAddress >> 12);
 
-    u32 remainingPages = pageCount;
+    void* const retAddress = (void*) currentAllocAddress;
 
-    void* retAddress = (void*) currentAllocAddress;
+    u32 virtualAddress = (currentPage + 1) << 12;
 
-    kprintf("kalloc Address: 0x%p\n", kalloc);
-
-    do
+    for(u32 remainingPages = lastPage - currentPage; remainingPages > 0;)
     {
         u32 physPageCount = remainingPages;
 
-        const u64 physicalAddress = GetPhysPages32Bit(&physPageCount);
+        const u64 physicalAddress = GetPhysPages(&physPageCount);
 
-        MapPage(physicalAddress, (void*) currentAllocAddress, 1, 0, 0, 0);
-        kprintf("Physical Address: 0x%x\n", (u32) physicalAddress);
+        for(u32 i = 0; i < physPageCount; ++i)
+        {
+            MapPage(physicalAddress + (i << 12), (void*) virtualAddress, 1, 0, 0, 0);
+
+            virtualAddress += 4096;
+        }
 
         remainingPages -= physPageCount;
-
-        currentAllocAddress += physPageCount * 4096;
-    } while(remainingPages);
+    };
     
+    currentAllocAddress = endAddress;
+
     return retAddress;
+}
+
+void kfree(void* data)
+{
+    (void) data;
+    // Nope.
 }

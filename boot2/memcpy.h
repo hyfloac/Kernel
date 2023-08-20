@@ -2,6 +2,10 @@
 
 #include "kstdint.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 inline void memcpy(void* dst, const void* src, const uSys length)
 {
     u8* dst8 = (u8*) dst;
@@ -14,3 +18,7 @@ inline void memcpy(void* dst, const void* src, const uSys length)
         ++src8;
     }
 }
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

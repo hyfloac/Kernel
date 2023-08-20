@@ -7,6 +7,23 @@
 extern "C" {
 #endif
 
+struct PhysicalDeviceObject;
+
+typedef KError_t(* DriverManagerAddDevice_f)(void* driver);
+typedef KError_t(* DriverManagerRemoveDevice_f)(void* driver);
+typedef KError_t(* DriverManagerStartDevice_f)(void* driver);
+typedef KError_t(* DriverManagerStopDevice_f)(void* driver);
+
+typedef struct PhysicalDeviceObject
+{
+    u32 Id;
+    void* Driver;
+    DriverManagerAddDevice_f ManagerAddDevice;
+    DriverManagerRemoveDevice_f ManagerRemoveDevice;
+    DriverManagerStartDevice_f ManagerStartDevice;
+    DriverManagerStopDevice_f ManagerStopDevice;
+} PhysicalDeviceObject;
+
 enum KMDriverRegistrationType
 {
     DRIVER_TYPE_UNKNOWN = 0,
@@ -45,8 +62,24 @@ typedef struct KMDriverInfoAttachment
 // u32 KM_DRIVER_INFO_ATTACHMENT_MAKE_VERSION(const u8 MAJOR, const u8 MINOR, const u16 PATCH);
 #define KM_DRIVER_INFO_ATTACHMENT_MAKE_VERSION(MAJOR, MINOR, PATCH) ((((u32) (MAJOR)) << 24) | (((u32) (MAJOR)) << 16) | ((u32) (PATCH)))
 
-KError_t RegisterKMDriver(const void* const registrationStructure);
+typedef KError_t(* DriverAddDevice_f)(PhysicalDeviceObject* pdo, void** deviceContext);
+typedef KError_t(* DriverRemoveDevice_f)(void* deviceContext);
+typedef KError_t(* DriverStartDevice_f)(void* deviceContext);
+typedef KError_t(* DriverStopDevice_f)(void* deviceContext);
+
+typedef struct KMDriverCoreFunctions
+{
+    DriverAddDevice_f AddDevice;
+    DriverRemoveDevice_f RemoveDevice;
+    DriverStartDevice_f StartDevice;
+    DriverStopDevice_f StopDevice;
+} KMDriverCoreFunctions;
+
+KError_t CreatePhysicalDevice(PhysicalDeviceObject** pdo);
+
+KError_t RegisterKMDriver(PhysicalDeviceObject* const pdo, const void* const registrationStructure);
+
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif

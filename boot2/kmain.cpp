@@ -10,6 +10,10 @@
 #include "kerror.h"
 #include "paging.h"
 #include "ps2.h"
+#include "kalloc.h"
+#include "keyboard.h"
+#include "pool_allocator.h"
+#include "command_line.h"
 
 char serialReadBuffer[1024];
 char serialWriteBuffer[1024];
@@ -66,22 +70,91 @@ extern "C" void kmain()
     // ConSetCursorCoord(0, 2);
 
     CheckMemoryLayout();
-    DumpMemoryLayout();
+    // DumpMemoryLayout();
 
-    const KError_t pageInitRes = InitPageMap();
-    kprintf("Page Init Res: %s\n", KernelLocalizeErrorCode(pageInitRes));
+    {
+        const KError_t pageInitRes = InitPageMap();
+        if(!KE_IS_OK(pageInitRes))
+        {
+            kprintf("Page Init Res: (%d) %s\n", pageInitRes, KernelLocalizeErrorCode(pageInitRes));
+            kprintf("%s\n", KernelGetErrorMessageSafe(0));
+        }
+    }
 
     SetupPaging32();
 
     kprintf("Print after enable paging!\n");
 
+    InitKAlloc();
+
+    InitPoolAllocator();
+
+    InitKeyboard();
+
     if(1)
     {
-        const KError_t registerKeyboardError = RegisterPS2KeyboardDriver();
+        KError_t keyboardError = RegisterPS2KeyboardDriver();
 
-        if(registerKeyboardError != KE_OK)
+        if(!KE_IS_OK(keyboardError))
         {
-            kprintf("Keyboard registration return (%d) %s.\n", registerKeyboardError, KernelLocalizeErrorCode(registerKeyboardError));
+            kprintf("Keyboard registration return (%d) %s.\n", keyboardError, KernelLocalizeErrorCode(keyboardError));
+            kprintf("%s\n", KernelGetErrorMessageSafe(0));
+        }
+        else
+        {
+            keyboardError = GetPS2KeyboardPDO()->ManagerAddDevice(GetPS2KeyboardPDO()->Driver);
+            if(!KE_IS_OK(keyboardError))
+            {
+                kprintf("Keyboard AddDevice return (%d) %s.\n", keyboardError, KernelLocalizeErrorCode(keyboardError));
+                kprintf("%s\n", KernelGetErrorMessageSafe(0));
+            }
+            else
+            {
+                keyboardError = GetPS2KeyboardPDO()->ManagerStartDevice(GetPS2KeyboardPDO()->Driver);
+
+                if(!KE_IS_OK(keyboardError))
+                {
+                    kprintf("Keyboard StartDevice return (%d) %s.\n", keyboardError, KernelLocalizeErrorCode(keyboardError));
+                    kprintf("%s\n", KernelGetErrorMessageSafe(0));
+                }
+            }
+        }
+
+    }
+    
+    if(1)
+    {
+        uSys tagCount = 0;
+        KError_t error = EnumTaggedAllocationInfos(&tagCount, NULL);
+        if(!KE_IS_OK(error))
+        {
+            kprintf("Enum Tags count return (%d) %s.\n", error, KernelLocalizeErrorCode(error));
+            kprintf("%s\n", KernelGetErrorMessageSafe(0));
+        }
+
+        TaggedAllocationsInfo* infos = (TaggedAllocationsInfo*) kalloc(tagCount * sizeof(TaggedAllocationsInfo));
+        error = EnumTaggedAllocationInfos(&tagCount, infos);
+
+        if(!KE_IS_OK(error))
+        {
+            kprintf("Enum Tags return (%d) %s.\n", error, KernelLocalizeErrorCode(error));
+            kprintf("%s\n", KernelGetErrorMessageSafe(0));
+        }
+
+        for(uSys i = 0; i < tagCount; ++i)
+        {
+            u32 tagString[2] = { infos[i].Tag, 0 };
+
+            kprintf("[%s] <%0X>: %u Current Allocs, %u Frees, %u Bytes\n", tagString, infos[i].Tag, infos[i].CurrentAllocationCount, infos[i].TotalFrees, infos[i].TotalAllocationSizeLow);
+        }
+    }
+
+    {
+        const KError_t error = InitCommandLine();
+
+        if(!KE_IS_OK(error))
+        {
+            kprintf("Command line init return (%d) %s.\n", error, KernelLocalizeErrorCode(error));
             kprintf("%s\n", KernelGetErrorMessageSafe(0));
         }
     }

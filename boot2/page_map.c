@@ -139,12 +139,12 @@ KError_t InitPageMap()
 
     for(u32 i = 0; i < validBlockCount; ++i)
     {
-        kprintf("Initializing Block %u/%u\n", i + 1, validBlockCount);
+        // kprintf("Initializing Block %u/%u\n", i + 1, validBlockCount);
         ACPIMem* block = &memoryTable[memoryTableSize + i];
         const u64 pageCount = block->RegionLength / 0x1000;
 
         u64 currentAddress = block->BaseAddress;
-        kprintf("  Page Count: %u", pageCount);
+        // kprintf("  Page Count: %u", pageCount);
         for(u64 j = pageCount; j > 0;)
         {
             FILL_BLOCK(256, 8);
@@ -157,7 +157,7 @@ KError_t InitPageMap()
             FILL_BLOCK(2, 1);
             FILL_BLOCK(1, 0);
         }
-        kprintf("\nFinsihed allocating blocks.\n");
+        // kprintf("\nFinsihed allocating blocks.\n");
     }
 #undef FILL_BLOCK
 

@@ -1,15 +1,11 @@
 #pragma once
 
-#include "kstdint.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void InitKAlloc(void);
-
-void* kalloc(uSys size);
-void kfree(void* data);
+#define KM_MAX(A, B) (((A) > (B)) ? (A) : (B))
+#define KM_MIN(A, B) (((A) > (B)) ? (B) : (A))
 
 #ifdef __cplusplus
 } /* extern "C" */

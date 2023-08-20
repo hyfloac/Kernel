@@ -4,6 +4,10 @@
 #include "driver.h"
 #include "kassert.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define KEY_PRESSED  (0x80000000)
 #define KEY_RELEASED (0x00000000)
 
@@ -14,7 +18,7 @@
 
 #define KEY_CODE_MASK (KEY_PRESSED | KEY_SHIFT_ACTIVE | KEY_CONTROL_ACTIVE | KEY_ALT_ACTIVE | KEY_COMMAND_ACTIVE)
 
-#define KEY_IS_PRESSED(Key) (((Key) & KEY_PRESSED) != KEY_PRESSED)
+#define KEY_IS_PRESSED(Key) (((Key) & KEY_PRESSED) == KEY_PRESSED)
 #define KEY_CODE(Key) ((Key) & ~KEY_CODE_MASK)
 
 enum KeyCode
@@ -46,6 +50,7 @@ enum KeyCode
     KEY_CODE_ARROW_LEFT    = 24,
     KEY_CODE_ARROW_RIGHT   = 25,
     KEY_CODE_TILDE         = 26,
+    KEY_CODE_SPACE         = 27,
     KEY_CODE_0             = 30,
     KEY_CODE_1             = 31,
     KEY_CODE_2             = 32,
@@ -154,15 +159,18 @@ typedef union KeyboardToggleBits
 
 STATIC_ASSERT(sizeof(KeyboardToggleBits) == 1, "KeyboardToggleBits was not a single byte in size.");
 
-u32 CodepointFromKeyCode(const u32 keyCode, const u32 keyboardLayout);
+void InitKeyboard(void);
 
-typedef u32(* KeyboardReadKeyCode_f)(void);
-typedef b8(* KeyboardIsKeyPressed_f)(const u32 keyCode);
-typedef KeyboardToggleBits(* KeyboardGetToggleKeys_f)(void);
+u32 CodepointFromKeyCode(PhysicalDeviceObject* const pdo, const u32 keyCode, const u32 keyboardLayout);
+
+typedef u32(* KeyboardReadKeyCode_f)(void* deviceContext);
+typedef b8(* KeyboardIsKeyPressed_f)(void* deviceContext, const u32 keyCode);
+typedef KeyboardToggleBits(* KeyboardGetToggleKeys_f)(void* deviceContext);
 
 typedef struct KMKeyboardDriverRegistrationInfo
 {
     KMDriverRegistrationBase Base;
+    KMDriverCoreFunctions CoreFunctions;
     KeyboardReadKeyCode_f ReadKeyCode;
     KeyboardIsKeyPressed_f IsKeyPressed;
     KeyboardGetToggleKeys_f GetToggleKeys;
@@ -171,8 +179,18 @@ typedef struct KMKeyboardDriverRegistrationInfo
 #define KM_KEYBOARD_DRIVER_VERSION_0 (0)
 #define KM_KEYBOARD_DRIVER_VERSION_CURRENT (KM_KEYBOARD_DRIVER_VERSION_0)
 
-KError_t KeyboardRegisterKMDriver(const void* const registration);
+KError_t KeyboardRegisterKMDriver(PhysicalDeviceObject* const pdo, const void* const registration);
 
-u32 KeyboardReadKeyCode(void);
-b8 KeyboardIsKeyPressed(const u32 keyCode);
-KeyboardToggleBits KeyboardGetToggleKeys(void);
+u32 KeyboardReadKeyCode(PhysicalDeviceObject* const pdo);
+b8 KeyboardIsKeyPressed(PhysicalDeviceObject* const pdo, const u32 keyCode);
+KeyboardToggleBits KeyboardGetToggleKeys(PhysicalDeviceObject* const pdo);
+
+typedef b8(* KeyboardKeyCallback_f)(PhysicalDeviceObject* pdo, u32 keyCode, KeyboardToggleBits toggleBits);
+
+KError_t KeyboardRegisterKeyCallback(const KeyboardKeyCallback_f callback, const i32 priority);
+
+void KeyboardNotifyKeyEvent(PhysicalDeviceObject* const pdo);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

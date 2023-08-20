@@ -46,8 +46,25 @@ typedef u32 uPtr;
   #define CHAR_BIT (8)
 #endif
 
-// #define NULL ((void*) 0)
-#define NULL (0)
+#ifndef NULL
+  // #define NULL ((void*) 0)
+  #define NULL (0)
+#endif
+
+#ifndef FALSE
+  #define FALSE (0) 
+#endif
+
+#ifndef TRUE
+  #define TRUE (1)
+#endif
+
+#ifndef __cplusplus
+  #define nullptr NULL
+  #define false FALSE
+  #define true TRUE
+#endif
+
 
 #define I8_MAX  ((i8)  0x7F)
 #define I16_MAX ((i16) 0x7FFF)

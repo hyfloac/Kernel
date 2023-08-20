@@ -13,6 +13,7 @@ FASTCALL_GCC const char* FASTCALL_MSVC KernelLocalizeErrorCode(const KError_t er
         {
             case KE_FAIL: return "Fail";
             case KE_INVALID_ARG: return "Invalid Arg";
+            case KE_OUT_OF_MEMORY: return "Out of Memory";
             case KE_PAGING_NO_VALID_PAGES: return "No Valid Pages";
             case KE_PAGING_NO_32_BIT_PAGES: return "No 32-Bit Pages";
             case KE_PAGING_NO_MORE_PLL: return "No more page linked list nodes";
