@@ -54,7 +54,7 @@ FASTCALL_GCC void FASTCALL_MSVC KernelRegisterErrorLocalizer(i16 errorNamespace,
  * @param freeOnChange Set to zero for a static string, set to non zero
  *      to have kfree invoked when a new message is set.
  */
-FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* message, int freeOnChange);
+FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* message, const bool freeOnChange);
 
 /**
  * @brief Clears the currently set error message.
@@ -75,9 +75,9 @@ inline void KernelClearErrorMessage()
  *      or another user to acquired it, this will return null.
  * @return The detailed error message.
  */
-FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(int acquire);
+FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(const bool acquire);
 
-FASTCALL_GCC inline const char* FASTCALL_MSVC KernelGetErrorMessageSafe(const int acquire)
+FASTCALL_GCC inline const char* FASTCALL_MSVC KernelGetErrorMessageSafe(const bool acquire)
 {
     const char* const message = KernelGetErrorMessage(acquire);
     return message ? message : "";

@@ -39,7 +39,7 @@ FASTCALL_GCC void FASTCALL_MSVC KernelRegisterErrorLocalizer(const i16 errorName
 static const char* kernelErrorMessage = NULL;
 static int kernelErrorFreeOnChange = 0;
 
-FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* const message, const int freeOnChange)
+FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* const message, const bool freeOnChange)
 {
     if(kernelErrorFreeOnChange)
     {
@@ -50,7 +50,7 @@ FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* const message,
     kernelErrorFreeOnChange = freeOnChange;
 }
 
-FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(const int acquire)
+FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(const bool acquire)
 {
     if(acquire)
     {
@@ -58,12 +58,12 @@ FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(const int acquire)
         {
             kernelErrorFreeOnChange = 0;
             const char* const ret = kernelErrorMessage;
-            kernelErrorMessage = NULL;
+            kernelErrorMessage = nullptr;
             return ret;
         }
         else
         {
-            return NULL;
+            return nullptr;
         }
     }
     else

@@ -8,6 +8,8 @@ init:
     mov ax, 0x03
     int 0x10                ; Set VGA to Text Mode 3
 
+    cli
+
     lgdt [gdt_ptr]
 
     mov eax, cr0

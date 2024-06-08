@@ -25,7 +25,7 @@ DECL_ENUM(CpuIdFeature)
     CPUID_FEAT_ECX_TM2          = 1 << 8,  // thermal monitor 2
     CPUID_FEAT_ECX_SSSE3        = 1 << 9,  // supplemental streaming SIMD extensions 3 (SSSSE3)
     CPUID_FEAT_ECX_CNXT_ID      = 1 << 10, // L1 context ID
-    CPUID_FEAT_ECX_FMA          = 1 << 12,
+    CPUID_FEAT_ECX_FMA          = 1 << 12, // Fused Multiply Add
     CPUID_FEAT_ECX_CMPXCHG16B   = 1 << 13, // cmpxchg16b available (obviously)
     CPUID_FEAT_ECX_xTPR_UPDATE  = 1 << 14, // xTPR update control
     CPUID_FEAT_ECX_PDCM         = 1 << 15, // performance and debug capability
@@ -69,7 +69,7 @@ DECL_ENUM(CpuIdFeature)
     CPUID_FEAT_EDX_SS           = 1 << 27, // self-snoop
     CPUID_FEAT_EDX_HTT          = 1 << 28, // multi-threading (hyper-threading, I think - the afterburner of Intel CPUs)
     CPUID_FEAT_EDX_TM           = 1 << 29, // thermal monitor
-    CPUID_FEAT_EDX_IA64         = 1 << 30,
+    CPUID_FEAT_EDX_IA64         = 1 << 30, // Itanium
     CPUID_FEAT_EDX_PBE          = 1 << 31, // Pend. Brk. EN. (wtf?)
 };
 

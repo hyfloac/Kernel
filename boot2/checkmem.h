@@ -14,6 +14,9 @@ typedef enum
     ACPI_REGION_RECLAIMABLE = 3,
     ACPI_REGION_ACPI_NVS = 4,
     ACPI_REGION_BAD = 5,
+    ACPI_REGION_EBDA = 1000,
+    ACPI_REGION_UNKNOWN = 1001,
+    ACPI_REGION_MISSING = 1002,
     ACPI_REGION_FORCE_DWORD = 0xFFFFFFFF,
     ACPI_REGION_MIN = ACPI_REGION_NORMAL,
     ACPI_REGION_MAX = ACPI_REGION_BAD
@@ -45,9 +48,9 @@ typedef struct
         u32 ExtendedAttributes;
         struct
         {
-            u32 AReserved : 30;
-            u32 AIgnored : 1;
             u32 ANonVolatile : 1;
+            u32 AIgnored : 1;
+            u32 AReserved : 30;
         };
     };
 } __attribute__((packed)) ACPIMem;

@@ -204,7 +204,7 @@ static KError_t KeyboardKMDriverRemoveDevice(void* driver)
         return KE_OK;
     }
 
-    return driverReal->Registration.CoreFunctions.StopDevice(driverReal->DeviceContext);
+    return driverReal->Registration.CoreFunctions.RemoveDevice(driverReal->DeviceContext);
 }
 
 static KError_t KeyboardKMDriverStartDevice(void* driver)

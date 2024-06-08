@@ -18,6 +18,8 @@
         "math.h": "c",
         "kmaths.h": "c",
         "type_traits": "c",
-        "memcpy.h": "c"
+        "memcpy.h": "c",
+        "paging.h": "c",
+        "kerror.h": "c"
     }
 }

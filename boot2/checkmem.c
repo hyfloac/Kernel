@@ -2,12 +2,22 @@
 #include "callspec.h"
 #include "console.h"
 #include "itoa.h"
+#include "kmaths.h"
+#include "kprintf.h"
+#include "acpi.h"
+#include "memcpy.h"
+#include "memset.h"
 
-#define MEMORY_TABLE_ADDRESS ((uPtr) (0x40000))
-#define MEMORY_TABLE_SIZE_ADDRESS ((uPtr) (MEMORY_TABLE_ADDRESS + 8))
+#define MEMORY_TABLE_SIZE_ADDRESS ((uPtr) (0x40000))
+#define MEMORY_TABLE_ADDRESS ((uPtr) (MEMORY_TABLE_SIZE_ADDRESS + 8))
 
 static u16 memoryTableSize;
 static ACPIMem* memoryTable;
+
+static ACPIMem EbdaRegion;
+
+static void FindEBDA();
+static void FindRSDP();
 
 static void MergeAdjacentRegions();
 static void CheckOverlappingRegions();
@@ -24,23 +34,29 @@ FASTCALL_GCC static ACPIRegionType FASTCALL_MSVC WorseACPIRegionType(ACPIRegionT
 
 void CheckMemoryLayout()
 {
-    memoryTableSize = *(u16*) MEMORY_TABLE_ADDRESS;
-    memoryTable =  (ACPIMem*) MEMORY_TABLE_SIZE_ADDRESS;
+    memoryTableSize = *(u16*) MEMORY_TABLE_SIZE_ADDRESS;
+    memoryTable =  (ACPIMem*) MEMORY_TABLE_ADDRESS;
 
     // Any unknown region types are set to reserved.
     for(u32 i = 0; i < memoryTableSize; ++i)
     {
         if(memoryTable[i].RegionType < ACPI_REGION_MIN || memoryTable[i].RegionType > ACPI_REGION_MAX)
         {
-            memoryTable[i].RegionType = ACPI_REGION_RESERVED;
+            memoryTable[i].RegionType = ACPI_REGION_UNKNOWN;
         }
     }
+
+    FindEBDA();
 
     MergeAdjacentRegions();
     CheckOverlappingRegions();
     SortAndFillHoles();
     MergeAdjacentRegions();
     FinalSort();
+
+    *(u16*) MEMORY_TABLE_SIZE_ADDRESS = memoryTableSize;
+
+    FindRSDP();
 }
 
 void DumpMemoryLayout()
@@ -102,6 +118,99 @@ void DumpMemoryLayout()
         }
     }
     ConSwapBuffers();
+}
+
+static void FindEBDA()
+{
+    for(u32 i = 0; i < memoryTableSize; ++i)
+    {
+        // The EBDA can't appear in high memory.
+        if(memoryTable[i].BaseAddressHigh != 0 || memoryTable[i].RegionLengthHigh != 0)
+        {
+            continue;
+        }
+
+        // The EBDA is just below 0xA0000
+        if(memoryTable[i].BaseAddressLow + memoryTable[i].RegionLengthLow == 0xA0000)
+        {
+            EbdaRegion = memoryTable[i];
+            memoryTable[i].RegionType = ACPI_REGION_EBDA;
+            break;
+        }
+    }
+}
+
+static void FindRSDP()
+{
+    if(EbdaRegion.BaseAddressLow + EbdaRegion.RegionLengthLow != 0xA0000)
+    {
+        return;
+    }
+
+    char searchBuffer[8] = "RSD PTR ";
+    const u64 searchQword = *(u64*) searchBuffer;
+
+    kprintf("RSDP Search: 0x%0X%0X\n", searchQword);
+
+    u32 ebdaLength = EbdaRegion.RegionLengthLow;
+    u32 ebdaAddress = EbdaRegion.BaseAddressLow;
+
+    ebdaLength = 0xFFFFF - 0x80000 + 1;
+    ebdaAddress = 0x80000;
+
+    kprintf("EBDA Address: 0x%0X, Length: 0x%0X\n", ebdaAddress, ebdaLength);
+
+    // Is base page aligned?
+    if(ebdaAddress & (16 - 1))
+    {
+        // Get the offset into the page
+        const u32 alignmentDif = 16 - (ebdaAddress - (ebdaAddress & (16 - 1)));
+        ebdaAddress += alignmentDif;
+        ebdaLength -= alignmentDif;
+    }
+
+    kprintf("EBDA Address: 0x%0X, Length: 0x%0X\n", ebdaAddress, ebdaLength);
+
+    ebdaLength /= sizeof(u64);
+    const u64* ebda = (u64*) ebdaAddress;
+    bool found = false;
+
+    // Search only along 16 byte boundaries.
+    for(u32 i = 0; i < ebdaLength; i += 2, ebda += 2)
+    {
+        if(*ebda == searchQword)
+        {
+            found = true;
+            break;
+        }
+        else if(i % 4 == 0 && false)
+        {
+            kprintf("0x%0X%0X 0x%0X%0X 0x%0X%0X 0x%0X%0X\n", *ebda, *(ebda + 1), *(ebda + 2), *(ebda + 3));
+            if(i == 64)
+            {
+                break;
+            }
+        }
+    }
+
+    if(!found)
+    {
+        kprintf("Failed to find RSDP.\n");
+        return;
+    }
+
+    const RsdpDescriptor1_0* const rsdp = (const RsdpDescriptor1_0*) ebda;
+
+    char strBuffer[9];
+    zeromem_stosb(strBuffer, sizeof(strBuffer));
+    memcpy(strBuffer, rsdp->Signature, sizeof(rsdp->Signature));
+
+    kprintf("RSDP: Signature: %s, Checksum: 0x%X, Revision: 0x%X\n", (char*) strBuffer, (u32) rsdp->Checksum, (u32) rsdp->Revision);
+    kprintf("RSDP: Revision: 0x%X\n", rsdp->Revision);
+    memcpy(strBuffer, rsdp->OEMID, sizeof(rsdp->OEMID));
+    strBuffer[sizeof(rsdp->OEMID)] = '\0';
+
+    kprintf("RSDP: OEMID: %s, RSDT Address: 0x%0X\n", (char*) strBuffer, rsdp->RsdtAddress);
 }
 
 static void MergeAdjacentRegions()
@@ -275,7 +384,7 @@ static void SortAndFillHoles()
 
         if(!found) // Fill the missing space
         {
-            if(memoryTable[closestTarget].RegionType == ACPI_REGION_RESERVED) // Holes are treated as Reserved, expand this region to fit.
+            if(memoryTable[closestTarget].RegionType == ACPI_REGION_MISSING) // Holes are treated as Missing, expand this region to fit.
             {
                 if(closestTarget != i)
                 {
@@ -290,18 +399,29 @@ static void SortAndFillHoles()
                 memoryTable[memoryTableSize] = memoryTable[i]; // Move the current region to the end.
                 ++memoryTableSize; // Resize the table to fit the new entry.
 
+                const u64 regionLength = memoryTable[closestTarget].BaseAddress - targetAddress;
+
                 memoryTable[i].BaseAddress = targetAddress;
-                memoryTable[i].RegionLength = memoryTable[closestTarget].BaseAddress - targetAddress;
-                memoryTable[i].RegionType = ACPI_REGION_RESERVED;
+                memoryTable[i].RegionLength = regionLength;
+                memoryTable[i].RegionType = ACPI_REGION_MISSING;
                 memoryTable[i].ExtendedAttributes = 0;
 
                 targetAddress += memoryTable[i].RegionLength;
 
-                ++i; // Skip the next entry as it is already correct.
-                if(closestTarget != i)
+                if(closestTarget == i)
                 {
-                    SwapMemoryRegion(i, closestTarget);
+                    SwapMemoryRegion(i + 1, memoryTableSize - 1);
                 }
+                else
+                {
+                    SwapMemoryRegion(i + 1, closestTarget);
+                }
+
+                ++i; // Skip the next entry as it is already correct.
+                // if(closestTarget != i)
+                // {
+                //     SwapMemoryRegion(i, closestTarget);
+                // }
                 targetAddress += memoryTable[i].RegionLength;
             }
         }
@@ -342,6 +462,8 @@ FASTCALL_GCC static char FASTCALL_MSVC GetDumpACPIChar(ACPIRegionType regionType
         case ACPI_REGION_RECLAIMABLE: return 'X';
         case ACPI_REGION_ACPI_NVS:    return 'V';
         case ACPI_REGION_BAD:         return 'B';
+        case ACPI_REGION_EBDA:        return 'E';
+        case ACPI_REGION_MISSING:     return 'H';
         default:                      return '?';
     }
 }
@@ -381,6 +503,11 @@ FASTCALL_GCC static ACPIRegionType FASTCALL_MSVC WorseACPIRegionType(ACPIRegionT
     if(a == ACPI_REGION_ACPI_NVS || b == ACPI_REGION_ACPI_NVS) // NVS is the second worst type
     {
         return ACPI_REGION_ACPI_NVS;
+    }
+
+    if(a == ACPI_REGION_UNKNOWN || b == ACPI_REGION_UNKNOWN) // We can't know what was intended, assume it's unknown and bad.
+    {
+        return ACPI_REGION_UNKNOWN;
     }
 
     return ACPI_REGION_RESERVED; // The only remaining option.

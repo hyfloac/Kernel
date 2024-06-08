@@ -67,23 +67,35 @@ KError_t InitPageMap()
     {
         if(memoryTable[i].RegionType == ACPI_REGION_NORMAL)
         {
+            u64 base = memoryTable[i].BaseAddress;
+            u64 length = memoryTable[i].RegionLength;
+
             // Ignore the base pages for safety. This might not be necessary.
-            if(memoryTable[i].BaseAddress < 0x9FC00)
+            if(base < 0x9FC00)
             {
-                continue;
+                if(base + length > 0x9FC00)
+                {
+                    const u64 diff = 0x9FC00 - base;
+                    base = 0x9FC00;
+                    length -= diff;
+                }
+                else
+                {
+                    continue;
+                }
             }
 
             const u32 index = memoryTableSize + validBlockCount;
 
             memoryTable[index] = memoryTable[i];
-
-            const u32 base = memoryTable[index].BaseAddress;
+            memoryTable[index].BaseAddress = base;
+            memoryTable[index].RegionLength = length;
 
             // Is base page aligned?
-            if(base & 0x1000)
+            if(base & (0x1000 - 1))
             {
                 // Get the offset into the page
-                const u32 alignmentDif = 0x1000 - (base - (base & 0x1000));
+                const u32 alignmentDif = 0x1000 - (base - (base & (0x1000 - 1)));
                 memoryTable[index].BaseAddress = base + alignmentDif;
                 memoryTable[index].RegionLength -= alignmentDif;
             }
@@ -906,6 +918,11 @@ FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages32Bit(u32* const pPageCount)
     }
 
     #undef IS_VALID_PAGE
+}
+
+FASTCALL_GCC void FASTCALL_MSVC FreePhysPages(const u64 startPage, const u32 pageCount)
+{
+
 }
 
 /**

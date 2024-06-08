@@ -1,10 +1,11 @@
 #include "driver.h"
+#include "acpi.h"
 #include "keyboard.h"
 #include "kalloc.h"
 
 static u32 currentDeviceId = 1;
 
-KError_t CreatePhysicalDevice(PhysicalDeviceObject** pdo)
+KError_t CreatePhysicalDevice(PhysicalDeviceObject** const pdo)
 {
     if(!pdo)
     {
@@ -42,6 +43,7 @@ KError_t RegisterKMDriver(PhysicalDeviceObject* const pdo, const void* const reg
     switch(regBase->Type)
     {
         case DRIVER_TYPE_KEYBOARD: return KeyboardRegisterKMDriver(pdo, registration);
+        case DRIVER_TYPE_ACPI:     return AcpiRegisterKMDriver(pdo, registration);
         default: break;
     }
 

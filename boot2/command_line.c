@@ -22,7 +22,6 @@ KError_t InitCommandLine(void)
 
     CommandLineInputWriteIndex = 0;
 
-
     ConWriteString("> ");
     ConSwapBuffers();
 

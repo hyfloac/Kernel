@@ -8,7 +8,7 @@ c_bouncepad:
     mov esp, kernel_stack_top   ; Setup the stack for the kernel
     call kmain                  ; Transfer to the C Kernel
 halt:
-    cli                         ; Prevent Interrupts from triggering
+    ; cli                         ; Prevent Interrupts from triggering
 .halt0:
     hlt                         ; Loop Halt
     jmp .halt0

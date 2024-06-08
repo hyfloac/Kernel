@@ -14,7 +14,7 @@ check_mem:
     xor bp, bp                  ; The table entry count
 
     mov edx, MAGIC_SMAP         ; Store magic word "SMAP"
-    mov eax, 0xE820
+    mov eax, 0xE820             ; 
     mov [es:di + 20], dword 1   ; Force ACPI 3.X entry
     mov ecx, 24                 ; Attempt to get 24 byte entries
     int 0x15

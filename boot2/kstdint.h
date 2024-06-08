@@ -60,9 +60,16 @@ typedef u32 uPtr;
 #endif
 
 #ifndef __cplusplus
-  #define nullptr NULL
-  #define false FALSE
-  #define true TRUE
+  #ifndef nullptr
+    #define nullptr NULL
+  #endif
+  #ifndef false
+    #define false FALSE
+  #endif
+  #ifndef true
+    #define true TRUE
+  #endif
+  typedef b8 bool;
 #endif
 
 

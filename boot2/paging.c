@@ -188,6 +188,19 @@ void SetupPaging32()
     set_cr3_page_pointer32(PageDirectoryPointerTable);
 }
 
+PAEPointer GetPhysPage(const void* const virtualAddress)
+{  
+    const u32 ptIndex = (u32) virtualAddress >> 12;
+
+
+    PAEPageTableEntry* pte = &AllPageTableEntries[ptIndex];
+ 
+    u64 physAddress = (((u64) pte->PhysicalAddressHigh) << 20) | pte->PhysicalAddressLow;
+    physAddress <<= 12;
+    PAEPointer ret = { (u32) (physAddress >> 32), (u32) (physAddress & 0xFFFFFFFF) };
+    return ret;
+}
+
 PAEPointer GetPhysAddress(const void* const virtualAddress)
 {  
     // const u32 pdptIndex =  ((u32) virtualAddress) >> 2;
