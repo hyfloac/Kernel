@@ -31,4 +31,4 @@ boot2:
     mov gs, ax
     mov ss, ax
 
-    jmp 0x00009D00          ; Transfer to the C Kernel Bouncepad
+    jmp 0x00009C00          ; Transfer to the C Kernel Bouncepad

@@ -65,7 +65,7 @@ void DumpMemoryLayout()
     const ConsoleColor SeperatorColor = ConColor_White;
     const ConsoleColor LengthColor = ConColor_LightBlue;
     const ConsoleColor TypeColor = ConColor_Red;
-    
+
     {
         const ConCoord cursor = ConGetCursorCoord();
         ConSetCursorCoord(0, cursor.y);

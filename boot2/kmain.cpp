@@ -18,6 +18,7 @@
 #include "avl_tree.h"
 #include "kstring.h"
 #include "memcpy.h"
+#include "io.h"
 
 char serialReadBuffer[1024];
 char serialWriteBuffer[1024];
@@ -106,7 +107,6 @@ extern "C" void kmain()
     SerialUpdateTick();
     SerialUpdateTick();
 
-
     // const char* message = "Hello, World!";
     
     // ConSetCursorCoord(0, 1);
@@ -114,11 +114,13 @@ extern "C" void kmain()
     // ConSwapBuffers();
     // ConSetCursorCoord(0, 2);
 
-    CheckMemoryLayout();
+    // bochs_break();
     // DumpMemoryLayout();
+    // bochs_break();
+    CheckMemoryLayout();
+    DumpMemoryLayout();
 
-    // return;
-
+    // bochs_break();
     {
         const KError_t pageInitRes = InitPageMap();
         if(!KE_IS_OK(pageInitRes))
@@ -128,6 +130,7 @@ extern "C" void kmain()
         }
     }
 
+
     SetupPaging32();
 
     kprintf("Print after enable paging!\n");
@@ -136,6 +139,7 @@ extern "C" void kmain()
 
     InitPoolAllocator();
 
+    // bochs_break();
     InitKeyboard();
 
     if(1)
@@ -245,6 +249,7 @@ extern "C" void kmain()
         PrintTestTree(pRoot, "T");
 
     }
+
 
     {
         const KError_t error = InitCommandLine();

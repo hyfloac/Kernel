@@ -59,7 +59,7 @@ FASTCALL_GCC void FASTCALL_MSVC KernelSetErrorMessage(const char* message, const
 /**
  * @brief Clears the currently set error message.
  */
-inline void KernelClearErrorMessage()
+static inline void KernelClearErrorMessage()
 {
     KernelSetErrorMessage(NULL, 0);
 }
@@ -77,7 +77,7 @@ inline void KernelClearErrorMessage()
  */
 FASTCALL_GCC const char* FASTCALL_MSVC KernelGetErrorMessage(const bool acquire);
 
-FASTCALL_GCC inline const char* FASTCALL_MSVC KernelGetErrorMessageSafe(const bool acquire)
+FASTCALL_GCC static inline const char* FASTCALL_MSVC KernelGetErrorMessageSafe(const bool acquire)
 {
     const char* const message = KernelGetErrorMessage(acquire);
     return message ? message : "";

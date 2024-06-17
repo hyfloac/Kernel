@@ -7,8 +7,11 @@ CheckCHSSizes:
     jc .exit
     inc dh
     mov BYTE [numberOfHeads], dh
+    mov dx, cx               ; Save CX into DX
     and cl, 0x3F
     mov BYTE [sectorsPerTrack], cl
+    shr dx, 6                ; Isolate track count in dx
+    mov WORD [tracksPerSide], dx ; Save tracks per side.
 .exit:
     ret
 
@@ -30,15 +33,17 @@ ReadSectorLegacy:
     push dx              ; Save sector
 
     xor dx, dx
-    mov bh, 0
-    mov bl, BYTE [numberOfHeads] ; Load the number of heads
+    mov bx, WORD [numberOfHeads] ; Load the number of heads
     div bx               ; Divide by the number of heads
 
-    mov dh, dl           ; Head
     mov bx, ax           ; Save cylinder
-    mov al, cl           ; Sector Count
+    mov dh, dl           ; Head
+    mov al, 1            ; Sector Count
     mov cx, bx           ; Prep Cylinder & Sector
-    shl cx, 5            ; Create space for the sector
+    shl cx, 8            ; Move lower 8 bits into CH
+    shr bx, 2            ; Isolate upper bits
+    and bx, 0xC0         ; Isolate upper bits
+    mov cl, bl           ; Move Upper bits into CL
     pop bx               ; Restore sector
     and bx, 0x3F         ; Isolate the low 6 bits
     or cx, bx            ; Merge the sector into the cylinder 
@@ -50,21 +55,29 @@ ReadSectorLegacy:
     ret
 
 ReadSectorsLegacy:
+    push es
     push ebx
     push di
 .loop:
     pop di
     pop ebx
 
+    push si
+
     push ebx
     push di
 
-    mov cx, 1                ; Load the sector count
+    ; mov cx, 1                ; Load the sector count
     call ReadSectorLegacy
 
     jc ERROR                 ; Carry is set on error
     pop di
     pop ebx
+
+    pop si
+
+    pop es
+    push es
 
     inc ebx
     push ebx
@@ -72,14 +85,19 @@ ReadSectorsLegacy:
     push di
 
     mov ebx, edi
-    shr ebx, 16
+    shr ebx, 4
+    and bx, 0xF000
+    mov di, es
+    add bx, di
     mov es, bx
 
     dec si
     jnz .loop
     pop di
     pop ebx
+    pop es
     ret
 
 sectorsPerTrack: db 18
+tracksPerSide: dw 80
 numberOfHeads: db 2

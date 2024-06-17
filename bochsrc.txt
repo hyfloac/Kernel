@@ -9,7 +9,7 @@ boot: floppy
 floppy_bootsig_check: disabled=0
 # no floppya
 # no floppyb
-floppya: 1_44="bootloader.img", status=inserted
+floppya: 1_44="bootloader.img", status=inserted, write_protected=1
 ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 ata0-master: type=disk, path="bootloader.img", mode=flat
 ata0-slave: type=none

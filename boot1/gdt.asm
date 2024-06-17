@@ -43,6 +43,7 @@ gdt_end:
 gdt_ptr:
     dw gdt_end - gdt_start
     dd gdt_start
+    dw 0x0000
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
 

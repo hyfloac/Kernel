@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_Words(const u32 bitCount)
+FASTCALL_GCC static inline u32 FASTCALL_MSVC BitSet_Words(const u32 bitCount)
 {
     const u32 minWords = bitCount / (sizeof(u32) * CHAR_BIT);
     const u32 remBits = bitCount % (sizeof(u32) * CHAR_BIT);
@@ -15,12 +15,12 @@ FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_Words(const u32 bitCount)
     return minWords + (remBits != 0 ? 1 : 0);
 }
 
-FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_Bits(const u32 wordCount)
+FASTCALL_GCC static inline u32 FASTCALL_MSVC BitSet_Bits(const u32 wordCount)
 {
     return wordCount * (sizeof(u32) * CHAR_BIT);
 }
 
-FASTCALL_GCC inline void FASTCALL_MSVC BitSet_SetBit(u32* const words, const u32 bit)
+FASTCALL_GCC static inline void FASTCALL_MSVC BitSet_SetBit(u32* const words, const u32 bit)
 {
     const u32 wordIndex = bit / sizeof(u32);
     const u32 bitIndex = bit % sizeof(u32);
@@ -29,7 +29,7 @@ FASTCALL_GCC inline void FASTCALL_MSVC BitSet_SetBit(u32* const words, const u32
     words[wordIndex] |= (1 << invBitIndex);
 }
 
-FASTCALL_GCC inline void FASTCALL_MSVC BitSet_UnsetBit(u32* const words, const u32 bit)
+FASTCALL_GCC static inline void FASTCALL_MSVC BitSet_UnsetBit(u32* const words, const u32 bit)
 {
     const u32 wordIndex = bit / sizeof(u32);
     const u32 bitIndex = bit % sizeof(u32);
@@ -38,7 +38,7 @@ FASTCALL_GCC inline void FASTCALL_MSVC BitSet_UnsetBit(u32* const words, const u
     words[wordIndex] &= ~(1 << invBitIndex);
 }
 
-FASTCALL_GCC inline void FASTCALL_MSVC BitSet_SetBitBool(u32* const words, const u32 bit, const u32 enabled)
+FASTCALL_GCC static inline void FASTCALL_MSVC BitSet_SetBitBool(u32* const words, const u32 bit, const u32 enabled)
 {
     if(enabled)
     {
@@ -50,7 +50,7 @@ FASTCALL_GCC inline void FASTCALL_MSVC BitSet_SetBitBool(u32* const words, const
     }
 }
 
-FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_FlipBit(u32* const words, const u32 bit)
+FASTCALL_GCC static inline u32 FASTCALL_MSVC BitSet_FlipBit(u32* const words, const u32 bit)
 {
     const u32 wordIndex = bit / sizeof(u32);
     const u32 bitIndex = bit % sizeof(u32);
@@ -62,7 +62,7 @@ FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_FlipBit(u32* const words, const u32
     return words[wordIndex] & bitMask;
 }
 
-FASTCALL_GCC inline u32 FASTCALL_MSVC BitSet_GetBit(const u32* const words, const u32 bit)
+FASTCALL_GCC static inline u32 FASTCALL_MSVC BitSet_GetBit(const u32* const words, const u32 bit)
 {
     const u32 wordIndex = bit / sizeof(u32);
     const u32 bitIndex = bit % sizeof(u32);

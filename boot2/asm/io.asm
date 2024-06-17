@@ -7,6 +7,7 @@ global in8
 global in16
 global in32
 global io_wait
+global bochs_break
 
 out8: ; void __fastcall out8(u16 port, u8 val)
     mov al, dl
@@ -44,4 +45,8 @@ in32: ; u32 __fastcall in32(u16 port)
 io_wait: ; void io_wait()
     mov dx, 0x0FED
     out dx, al      ; Dump random data to unused port 0x0FED
+    ret
+
+bochs_break: ; void bochs_break()
+    xchg bx, bx
     ret

@@ -16,7 +16,7 @@ typedef struct
     u32 low;
 } PAEPointer;
 
-inline u64 PAEPointerToU64(const PAEPointer pointer)
+static inline u64 PAEPointerToU64(const PAEPointer pointer)
 {
     return (((u64) pointer.high) << 32) | (u64) pointer.low;
 }

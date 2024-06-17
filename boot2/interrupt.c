@@ -74,7 +74,7 @@ void InitIDT32()
 
     for(u32 vector = 0; vector < 32; ++vector)
     {
-        IDTSetDescriptor32((u8) vector, (u32) isr_stub_table32[vector], 0x8E);
+        IDTSetDescriptor32((u8) vector, (u32) isr_stub_table32[vector], 0x8F);
     }
 
     for(u32 vector = 32; vector < 48; ++vector)

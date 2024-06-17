@@ -5,6 +5,7 @@ global memory_table_size
 MAGIC_SMAP equ 0x534D4150       ; The magic number "SMAP"
 
 check_mem:
+    push es
     mov ax, 0x4000              ; The table will be at 0x40008, so the segment will be 0x4000
     mov es, ax
 
@@ -59,8 +60,10 @@ check_mem:
 .e820f:
     mov [es:0x0], bp            ; Store the table count at 0x40000
     clc                         ; Success
+    pop es
     ret
 .failed:
     mov [es:0x0], word 0xFFFF
     stc                         ; Function unsupported
+    pop es
     ret

@@ -3,7 +3,7 @@ CPPC := g++
 CC := gcc
 WARNINGS := -Wall -Wextra -Wno-multichar
 SIMD := -mno-sse -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4 -mno-avx -mno-avx2
-COMMON_FLAGS :=  -O1 -m32 -nostdlib -ffreestanding -mno-red-zone -fno-pie -flto $(SIMD) $(WARNINGS) -T boot2/boot.ld
+COMMON_FLAGS :=  -O0 -m32 -nostdlib -ffreestanding -mno-red-zone -fno-pie $(SIMD) $(WARNINGS) -T boot2/boot.ld
 CPPFLAGS := $(COMMON_FLAGS) -std=c++11 -fno-exceptions -fno-rtti
 CFLAGS   := $(COMMON_FLAGS) -std=c11 
 
@@ -41,7 +41,7 @@ build/boot1.bin:
 	@$(NASM) -f bin -Iboot1 boot1/boot1.asm -o $@
 
 build/bootloader.bin: $(ASM_OBJS) $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $^
+	@$(CC) $(CFLAGS)  -Xlinker -Map=$@.map -o $@ $^
 
 build/asm/%.o: boot2/asm/%.asm
 	@$(NASM) -f elf32 -Iboot2/asm $< -o $@
