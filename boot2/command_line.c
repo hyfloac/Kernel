@@ -30,7 +30,8 @@ KError_t InitCommandLine(void)
 
 void CommandLineRegisterCommand(const char* const name, const CommandLineCommand_f commandFunc)
 {
-
+    (void) name;
+    (void) commandFunc;
 }
 
 static void CommandLineSubmit(void)

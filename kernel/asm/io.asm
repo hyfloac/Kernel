@@ -1,4 +1,5 @@
-[BITS 64]
+; [BITS 64]
+[BITS 32]
 
 global out8
 global out16

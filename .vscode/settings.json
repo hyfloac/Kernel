@@ -20,6 +20,8 @@
         "type_traits": "c",
         "memcpy.h": "c",
         "paging.h": "c",
-        "kerror.h": "c"
+        "kerror.h": "c",
+        "elf32.h": "c",
+        "pool_allocator.h": "c"
     }
 }

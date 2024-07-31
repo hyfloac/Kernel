@@ -72,6 +72,13 @@ boot:
     int 0x13
 
     jc ERROR                 ; Carry is set on error
+
+    mov si, Kernel_DAPACK   ; Address of the Boot2-1 Disk Address Packet
+    mov ah, 0x42             ; Set read mode
+    mov dl, BYTE [bootDrive] ; 0x80 is the C drive, 0x81 is the second driver
+    int 0x13
+
+    jc ERROR                 ; Carry is set on error
     jmp .jmpout
 .readLegacy:
     mov si, [b1_blkcnt]
@@ -82,6 +89,11 @@ boot:
     mov si, [b2_blkcnt]
     mov ebx, [b2_0_d_lba]    ; Load the LBA
     mov di, [b2_0_db_add]    ; Load the buffer address
+    call ReadSectorsLegacy
+
+    mov si, [k_blkcnt]
+    mov ebx, [k_d_lba]    ; Load the LBA
+    mov di, [k_db_add]    ; Load the buffer address
     call ReadSectorsLegacy
 .jmpout:
     jmp 0:0x0500             ; Jump to the extended 16-Bit bootloader.
@@ -103,7 +115,7 @@ b1_db_add:   dw 0x0500       ; Memory buffer desintation address
 b1_d_lba:    dd 0x00000002   ; Put the LBA to read in this spot
              dd 0x00000000   ; More storage bytes only for big LBA's
      
-b2_blkcnt:   dw 150          ; The overall block count of boot2
+b2_blkcnt:   dw 160          ; The overall block count of boot2
 
 Boot2_0_DAPACK:              ; The boot2-0 data
              db 0x10     
@@ -114,13 +126,22 @@ b2_0_db_add: dw 0x9C00       ; Memory buffer desintation address
 b2_0_d_lba:  dd 0x0000000A   ; Put the LBA to read in this spot
              dd 0x00000000   ; More storage bytes only for big LBA's
 
-Boot2_1_DAPACK:              ; The boot2-0 data
+Boot2_1_DAPACK:              ; The boot2-1 data
              db 0x10     
              db 0x00     
-b2_1_blkcnt: dw 100          ; INT 0x13 will set this to the number of blocks read
+b2_1_blkcnt: dw 110          ; INT 0x13 will set this to the number of blocks read
 b2_1_db_add: dw 0x0000       ; Memory buffer desintation address
              dw 0x1000       ; Page 1
 b2_1_d_lba:  dd 0x0000003C   ; Put the LBA to read in this spot
+             dd 0x00000000   ; More storage bytes only for big LBA's
+
+Kernel_DAPACK:              ; The Kernel data
+             db 0x10     
+             db 0x00     
+k_blkcnt:    dw 50           ; INT 0x13 will set this to the number of blocks read
+k_db_add:    dw 0x0000       ; Memory buffer desintation address
+             dw 0x3000       ; Page 2
+k_d_lba:     dd 0x000000AA   ; Put the LBA to read in this spot
              dd 0x00000000   ; More storage bytes only for big LBA's
 
 times 510-($-$$) db 0

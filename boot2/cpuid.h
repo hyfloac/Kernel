@@ -71,7 +71,7 @@ DECL_ENUM(CpuIdFeature)
     CPUID_FEAT_EDX_TM           = 1 << 29, // thermal monitor
     CPUID_FEAT_EDX_IA64         = 1 << 30, // Itanium
     CPUID_FEAT_EDX_PBE          = 1 << 31, // Pend. Brk. EN. (wtf?)
-};
+} CpuIdFeature;
 
 #ifdef __cplusplus
 } /* extern "C" */

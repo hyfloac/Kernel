@@ -69,7 +69,9 @@ typedef u32 uPtr;
   #ifndef true
     #define true TRUE
   #endif
-  typedef b8 bool;
+  #ifndef NO_BOOL
+    typedef b8 bool;
+  #endif
 #endif
 
 

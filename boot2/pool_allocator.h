@@ -22,7 +22,7 @@ DECL_ENUM(PoolFlag)
 
     PoolFlagPagedExec = PoolFlagPaged | PoolFlagExecutable,
     PoolFlagNonPagedExec = PoolFlagNonPaged | PoolFlagExecutable,
-};
+} PoolFlag;
 
 void InitPoolAllocator(void);
 

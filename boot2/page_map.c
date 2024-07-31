@@ -922,7 +922,8 @@ FASTCALL_GCC u64 FASTCALL_MSVC GetPhysPages32Bit(u32* const pPageCount)
 
 FASTCALL_GCC void FASTCALL_MSVC FreePhysPages(const u64 startPage, const u32 pageCount)
 {
-
+    (void) startPage;
+    (void) pageCount;
 }
 
 /**

@@ -19,9 +19,20 @@
 #include "kstring.h"
 #include "memcpy.h"
 #include "io.h"
+#include "elf32.h"
 
 char serialReadBuffer[1024];
 char serialWriteBuffer[1024];
+
+
+typedef int kprintf_f(const char* format, ...);
+
+struct KernelFunctions
+{
+    kprintf_f* kprintf;
+};
+
+typedef int kmain_f(const KernelFunctions* functions);
 
 struct Test
 {
@@ -139,10 +150,22 @@ extern "C" void kmain()
 
     InitPoolAllocator();
 
-    // bochs_break();
+    kmain_f* elfKmain = (kmain_f*) Elf32LoadFile((void*) 0x30000);
+    
+    KernelFunctions functions {};
+    functions.kprintf = kprintf;
+
+    kprintf("kmain: 0x%p\n", elfKmain);
+
+    if(elfKmain)
+    {
+        // bochs_break();
+        elfKmain(&functions);
+    }
+
     InitKeyboard();
 
-    if(1)
+    if constexpr(0)
     {
         KError_t keyboardError = RegisterPS2KeyboardDriver();
 
@@ -172,7 +195,7 @@ extern "C" void kmain()
         }
     }
     
-    if(0)
+    if constexpr(0)
     {
         uSys tagCount = 0;
         KError_t error = EnumTaggedAllocationInfos(&tagCount, NULL);
@@ -201,7 +224,7 @@ extern "C" void kmain()
         kfree(infos);
     }
 
-    if(0)
+    if constexpr(0)
     {
         const uSys length = 23895;
         // const uSys length = 5000;
@@ -222,7 +245,7 @@ extern "C" void kmain()
         kfree(test);
     }
 
-    if(0)
+    if constexpr(0)
     {
         Test x0;
         x0.X = 0;
@@ -251,6 +274,7 @@ extern "C" void kmain()
     }
 
 
+    if constexpr(0)
     {
         const KError_t error = InitCommandLine();
 

@@ -33,7 +33,7 @@ DECL_ENUM_S(ConsoleColor, u8)
     ConColor_LightMagenta   = 0xD,
     ConColor_Yellow         = 0xE,
     ConColor_White          = 0xF
-};
+} ConsoleColor;
 
 typedef struct
 {

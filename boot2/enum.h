@@ -1,17 +1,14 @@
 #pragma once
 
-#ifdef __cplusplus
-  #define DECL_ENUM(_NAME) \
-    enum _NAME
-  #define DECL_ENUM_S(_NAME, _SIZE_TYPE) \
-    enum _NAME : _SIZE_TYPE
+#define DECL_ENUM(NAME) \
+  typedef enum NAME
+
+#if defined(__cplusplus) || defined(USE_SIZED_ENUM)
+  #define DECL_ENUM_S(NAME, SIZE_TYPE) \
+    typedef enum NAME : SIZE_TYPE
 #else
-  #define DECL_ENUM(_NAME) \
-    typedef enum _NAME _NAME; \
-    enum _NAME
-  #define DECL_ENUM_S(_NAME, _SIZE_TYPE) \
-    typedef enum _NAME _NAME; \
-    enum _NAME
+  #define DECL_ENUM_S(NAME, SIZE_TYPE) \
+    typedef enum NAME
 #endif
 
 #define ENUM_FORCE_U8  _FORCE_U8  = 0x7F

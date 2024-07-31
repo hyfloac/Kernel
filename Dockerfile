@@ -24,11 +24,15 @@ nasm
 RUN mkdir $HOME/src
 WORKDIR $HOME/src
 
-RUN wget ftp://ftp.gnu.org/gnu/gcc/gcc-11.2.0/gcc-11.2.0.tar.gz
-RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz
+# RUN wget ftp://ftp.gnu.org/gnu/gcc/gcc-11.2.0/gcc-11.2.0.tar.gz
+RUN wget ftp://ftp.gnu.org/gnu/gcc/gcc-14.1.0/gcc-14.1.0.tar.gz
+# RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz
+RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.gz
 
-RUN tar -xf gcc-11.2.0.tar.gz
-RUN tar -xf binutils-2.38.tar.gz
+# RUN tar -xf gcc-11.2.0.tar.gz
+RUN tar -xf gcc-14.1.0.tar.gz
+# RUN tar -xf binutils-2.38.tar.gz
+RUN tar -xf binutils-2.42.tar.gz
 
 ENV PREFIX="$HOME/opt/cross"
 ENV TARGET=i686-elf
@@ -37,7 +41,8 @@ ENV PATH="$PREFIX/bin:$PATH"
 RUN mkdir build-binutils
 WORKDIR build-binutils
 
-RUN ../binutils-2.38/configure --target=$TARGET --prefix=$PREFIX --with-sysroot --disable-nls --disable-werror
+# RUN ../binutils-2.38/configure --target=$TARGET --prefix=$PREFIX --with-sysroot --disable-nls --disable-werror
+RUN ../binutils-2.42/configure --target=$TARGET --prefix=$PREFIX --with-sysroot --disable-nls --disable-werror
 RUN make
 RUN make install
 
@@ -48,7 +53,8 @@ RUN which -- $TARGET-as || echo $TARGET-as is not in the PATH
 RUN mkdir build-gcc
 WORKDIR build-gcc
 
-RUN ../gcc-11.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers
+# RUN ../gcc-11.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers
+RUN ../gcc-14.1.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers
 RUN make all-gcc
 RUN make all-target-libgcc
 RUN make install-gcc
